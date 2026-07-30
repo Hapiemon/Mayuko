@@ -57,14 +57,14 @@ export default function ChatPage() {
   };
 
   const USER_BUBBLE_CLASSES: Record<string, string> = {
-    まゆこ: 'border-pink-400 bg-white text-gray-900',
-    だいや: 'border-blue-400 bg-white text-gray-900',
-    あつと: 'border-green-400 bg-white text-gray-900',
-    せれな: 'border-purple-400 bg-white text-gray-900',
-    るちえ: 'border-amber-400 bg-white text-gray-900',
+    まゆこ: 'border-pink-400 bg-pink-50 text-gray-900',
+    だいや: 'border-blue-400 bg-blue-50 text-gray-900',
+    あつと: 'border-green-400 bg-green-50 text-gray-900',
+    せれな: 'border-purple-400 bg-purple-50 text-gray-900',
+    るちえ: 'border-amber-400 bg-amber-50 text-gray-900',
   };
 
-  const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-white text-gray-900';
+  const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-violet-50 text-gray-900';
 
   const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string; cannedWindowBg: string; cannedTextColor: string; cannedHover: string; cannedBorder: string }> = {
     まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700', cannedWindowBg: 'bg-pink-100', cannedTextColor: 'text-pink-700', cannedHover: 'hover:bg-pink-200', cannedBorder: 'border-pink-300' },
