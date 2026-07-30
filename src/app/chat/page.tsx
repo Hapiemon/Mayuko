@@ -343,7 +343,7 @@ export default function ChatPage() {
             className="flex-shrink-0 h-10 px-3 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-xs font-semibold disabled:opacity-50"
             title="画像・動画を共有"
           >
-            共有
+            📷
           </button>
           <textarea
             value={inputText}
