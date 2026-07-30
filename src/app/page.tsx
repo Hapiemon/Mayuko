@@ -17,20 +17,17 @@ export default function Home() {
     sessionStorage.setItem('chatUser', name);
     // まゆこだけログイン通知を送信
     if (name === 'まゆこ') {
-      try {
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'MINE',
-            body: `${name}がログインしました`,
-            url: '/chat',
-            excludeUser: name,
-          }),
-        });
-      } catch {
-        // 通知失敗してもログインは続行
-      }
+      // 非同期で投げる（遷移をブロックしない）
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'MINE',
+          body: `${name}がログインしました`,
+          url: '/chat',
+          excludeUser: name,
+        }),
+      }).catch(() => {});
     }
     router.push('/chat');
   };
