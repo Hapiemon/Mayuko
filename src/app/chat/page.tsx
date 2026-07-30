@@ -283,18 +283,23 @@ export default function ChatPage() {
           <p className="text-violet-200 text-xs">MINE</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-violet-700 rounded-full px-2 py-1">
-            <span className="text-[10px] text-violet-200">文字</span>
-            <select
-              value={messageFontSize}
-              onChange={(e) => setMessageFontSize(e.target.value as MessageFontSize)}
-              aria-label="メッセージ文字サイズ"
-              className="bg-transparent text-white text-xs focus:outline-none"
-            >
-              <option value="small" className="text-gray-900">小</option>
-              <option value="medium" className="text-gray-900">中</option>
-              <option value="large" className="text-gray-900">大</option>
-            </select>
+          <div className="flex items-center gap-1 bg-violet-700 rounded-full p-1">
+            <span className="px-1 text-[10px] text-violet-200">文字</span>
+            {([
+              { value: 'small', label: '小' },
+              { value: 'medium', label: '中' },
+              { value: 'large', label: '大' },
+            ] as const).map((size) => (
+              <button
+                key={size.value}
+                onClick={() => setMessageFontSize(size.value)}
+                aria-label={`文字サイズ${size.label}`}
+                aria-pressed={messageFontSize === size.value}
+                className={`h-8 min-w-8 px-2 rounded-full text-xs font-semibold transition-colors ${messageFontSize === size.value ? 'bg-white text-violet-700' : 'text-white hover:bg-violet-600'}`}
+              >
+                {size.label}
+              </button>
+            ))}
           </div>
           {pushPermission !== 'granted' && pushPermission !== 'denied' && (
             <button
