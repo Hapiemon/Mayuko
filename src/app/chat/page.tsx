@@ -26,6 +26,14 @@ export default function ChatPage() {
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [cannedOpen, setCannedOpen] = useState(false);
+  const [activeCannedTab, setActiveCannedTab] = useState<'greeting' | 'adj' | 'reply'>('greeting');
+
+  const CANNED_PHRASES: Record<string, string[]> = {
+    greeting: ['おはよう', 'こんにちは', 'こんばんは', 'お疲れさま'],
+    adj: ['素敵', 'すごい', 'かわいい', 'いいね'],
+    reply: ['わかった', 'ありがとう', '了解', 'あとで確認します'],
+  };
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -318,7 +326,56 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t bg-white px-4 py-3 relative">
+      <div className={`border-t bg-white px-4 py-3 relative transition-transform duration-200 ${cannedOpen ? '-translate-y-40' : ''}`}>
+        {/* 定型文パネル（フッター上にせり上がる） */}
+        <div
+          className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transform transition-all duration-200 origin-bottom ${cannedOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}
+        >
+          <div className="flex gap-2 mb-2">
+            <button
+              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'greeting' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setActiveCannedTab('greeting')}
+            >
+              挨拶
+            </button>
+            <button
+              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'adj' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setActiveCannedTab('adj')}
+            >
+              形容詞
+            </button>
+            <button
+              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'reply' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setActiveCannedTab('reply')}
+            >
+              返事
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={() => setCannedOpen(false)}
+              className="px-2 py-1 text-xs text-gray-500"
+            >
+              閉じる
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {CANNED_PHRASES[activeCannedTab].map((phrase) => (
+              <button
+                key={phrase}
+                onClick={() => {
+                  setInputText((prev) => {
+                    const needSpace = prev && !prev.endsWith(' ');
+                    return prev + (needSpace ? ' ' : '') + phrase;
+                  });
+                }}
+                className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200"
+              >
+                {phrase}
+              </button>
+            ))}
+          </div>
+        </div>
         <button
           onClick={scrollToBottom}
           aria-label="最新へ移動"
@@ -330,6 +387,16 @@ export default function ChatPage() {
           <p className="text-center text-sm text-violet-500 mb-2">アップロード中...</p>
         )}
         <div className="flex items-end gap-2">
+          <button
+            onClick={() => setCannedOpen((s) => !s)}
+            aria-label="定型文"
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 mr-2"
+            title="定型文"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
           <input
             ref={mediaInputRef}
             type="file"
