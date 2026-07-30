@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Mayuko Chat',
-  description: 'みんなのチャットアプリ',
+  title: 'MINE',
+  description: 'みんなのプライベートチャット',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Mayuko Chat',
+    title: 'MINE',
   },
   icons: {
     icon: '/icon.png',
@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Mayuko Chat" />
+        <meta name="apple-mobile-web-app-title" content="MINE" />
         <meta name="theme-color" content="#7C3AED" />
         <link rel="apple-touch-icon" href="/icon.png" />
         <link rel="icon" href="/icon.png" />

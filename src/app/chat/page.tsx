@@ -152,7 +152,7 @@ export default function ChatPage() {
       <header className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
         <div>
           <p className="font-bold text-lg leading-tight">{currentUser}</p>
-          <p className="text-violet-200 text-xs">Mayuko Chat</p>
+          <p className="text-violet-200 text-xs">MINE</p>
         </div>
         <button
           onClick={() => { sessionStorage.removeItem('chatUser'); router.push('/'); }}

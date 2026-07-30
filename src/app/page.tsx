@@ -21,7 +21,7 @@ export default function Home() {
   return (
     <main className="min-h-dvh bg-gradient-to-b from-violet-100 to-pink-100 px-4 py-6">
       <div className="w-full max-w-sm mx-auto bg-white rounded-2xl shadow-lg p-5">
-        <h1 className="text-2xl font-bold text-center text-violet-700 mb-1">Mayuko Chat</h1>
+        <h1 className="text-2xl font-bold text-center text-violet-700 mb-1">MINE</h1>
         <p className="text-center text-gray-500 mb-5 text-sm">ユーザーを選んでください</p>
         <div className="grid grid-cols-2 gap-3">
           {USERS.map((user) => (

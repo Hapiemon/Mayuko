@@ -1,7 +1,7 @@
 {
-  "name": "Mayuko Chat",
-  "short_name": "Mayuko",
-  "description": "みんなのチャットアプリ",
+  "name": "MINE",
+  "short_name": "MINE",
+  "description": "みんなのプライベートチャット",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#7C3AED",
