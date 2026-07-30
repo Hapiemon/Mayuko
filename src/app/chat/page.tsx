@@ -23,8 +23,7 @@ export default function ChatPage() {
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -104,18 +103,11 @@ export default function ChatPage() {
     }
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     await uploadMedia(file);
-    if (imageInputRef.current) imageInputRef.current.value = '';
-  };
-
-  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadMedia(file);
-    if (videoInputRef.current) videoInputRef.current.value = '';
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -205,6 +197,8 @@ export default function ChatPage() {
                   <video
                     src={msg.media_url}
                     controls
+                    playsInline
+                    preload="metadata"
                     className="rounded-xl max-w-full mt-1"
                     style={{ maxWidth: 280 }}
                   />
@@ -230,40 +224,24 @@ export default function ChatPage() {
 
       {/* Input */}
       <div className="border-t bg-white px-4 py-3">
-        {(uploading) && (
+        {uploading && (
           <p className="text-center text-sm text-violet-500 mb-2">アップロード中...</p>
         )}
         <div className="flex items-end gap-2">
-          {/* Media inputs */}
           <input
-            ref={imageInputRef}
+            ref={mediaInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="hidden"
-            onChange={handleImageChange}
-          />
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={handleVideoChange}
+            onChange={handleMediaChange}
           />
           <button
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => mediaInputRef.current?.click()}
             disabled={uploading || sending}
             className="flex-shrink-0 h-10 px-3 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-xs font-semibold disabled:opacity-50"
-            title="画像を送信"
+            title="画像・動画を共有"
           >
-            画像
-          </button>
-          <button
-            onClick={() => videoInputRef.current?.click()}
-            disabled={uploading || sending}
-            className="flex-shrink-0 h-10 px-3 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-xs font-semibold disabled:opacity-50"
-            title="動画を送信"
-          >
-            動画
+            共有
           </button>
           <textarea
             value={inputText}
