@@ -412,7 +412,12 @@ export default function ChatPage() {
       <div className="border-t bg-white px-4 py-3 relative">
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <div className="flex items-center gap-1 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {CANNED_PHRASES[activeCannedTab].map((p) => (
+              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200">{p}</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
             <div className="flex gap-1 overflow-x-auto flex-nowrap flex-1 min-w-0 pb-1">
               {TABS.map((t) => (
                 <button
@@ -424,12 +429,7 @@ export default function ChatPage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600">✕</button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {CANNED_PHRASES[activeCannedTab].map((p) => (
-              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200">{p}</button>
-            ))}
+            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-3 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full">✕</button>
           </div>
         </div>
 
