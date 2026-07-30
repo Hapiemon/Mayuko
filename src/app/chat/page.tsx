@@ -22,6 +22,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   const bottomRef = useRef<HTMLDivElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -33,7 +34,38 @@ export default function ChatPage() {
       return;
     }
     setCurrentUser(user);
+    // 初期パーミッション状態を反映
+    if (typeof Notification !== 'undefined') {
+      setNotifPermission(Notification.permission);
+    }
   }, [router]);
+
+  // プッシュ通知の購読登録
+  const registerPush = useCallback(async (user: string) => {
+    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+      if (permission !== 'granted') return;
+
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey,
+      });
+
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), user }),
+      });
+    } catch (err) {
+      console.error('push register error:', err);
+    }
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -51,10 +83,14 @@ export default function ChatPage() {
     if (!currentUser) return;
     fetchMessages();
     pollingRef.current = setInterval(fetchMessages, 3000);
+    // 既に許可済みの場合はサイレントに登録
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      registerPush(currentUser);
+    }
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [currentUser, fetchMessages]);
+  }, [currentUser, fetchMessages, registerPush]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,14 +106,26 @@ export default function ChatPage() {
   const sendText = async () => {
     if (!inputText.trim() || sending) return;
     setSending(true);
+    const textToSend = inputText.trim();
     try {
       await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: currentUser, content: inputText.trim() }),
+        body: JSON.stringify({ sender: currentUser, content: textToSend }),
       });
       setInputText('');
       await fetchMessages();
+      // 他のユーザーに通知
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentUser,
+          body: textToSend,
+          url: '/chat',
+          excludeUser: currentUser,
+        }),
+      }).catch(() => {});
     } finally {
       setSending(false);
     }
@@ -116,6 +164,17 @@ export default function ChatPage() {
         return;
       }
       await fetchMessages();
+      // 他のユーザーに通知
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentUser,
+          body: 'ファイルが送信されました',
+          url: '/chat',
+          excludeUser: currentUser,
+        }),
+      }).catch(() => {});
     } finally {
       setUploading(false);
     }
@@ -172,12 +231,22 @@ export default function ChatPage() {
           <p className="font-bold text-lg leading-tight">{currentUser}</p>
           <p className="text-violet-200 text-xs">MINE</p>
         </div>
-        <button
-          onClick={() => { sessionStorage.removeItem('chatUser'); router.push('/'); }}
-          className="text-sm bg-violet-700 hover:bg-violet-800 px-3 py-1 rounded-full transition-colors"
-        >
-          変更
-        </button>
+        <div className="flex items-center gap-2">
+          {notifPermission !== 'granted' && notifPermission !== 'denied' && (
+            <button
+              onClick={() => registerPush(currentUser)}
+              className="text-xs bg-yellow-400 text-yellow-900 font-bold px-3 py-1 rounded-full transition-colors active:scale-95"
+            >
+              通知を許可
+            </button>
+          )}
+          <button
+            onClick={() => { sessionStorage.removeItem('chatUser'); router.push('/'); }}
+            className="text-sm bg-violet-700 hover:bg-violet-800 px-3 py-1 rounded-full transition-colors"
+          >
+            変更
+          </button>
+        </div>
       </header>
 
       {/* Messages */}
