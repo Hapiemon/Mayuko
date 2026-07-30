@@ -66,12 +66,12 @@ export default function ChatPage() {
 
   const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-white text-gray-900';
 
-  const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string }> = {
-    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200' },
-    だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200' },
-    あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200' },
-    せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200' },
-    るちえ: { headerBg: 'bg-amber-400', headerSubText: 'text-amber-100', footerBg: 'bg-amber-50', footerBorder: 'border-amber-200' },
+  const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string }> = {
+    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700' },
+    だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200', buttonBg: 'bg-blue-500', buttonHover: 'hover:bg-blue-600', buttonBgLight: 'bg-blue-100', buttonHoverLight: 'hover:bg-blue-200', buttonDarkerBg: 'bg-blue-600', buttonDarkerHover: 'hover:bg-blue-700' },
+    あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200', buttonBg: 'bg-green-500', buttonHover: 'hover:bg-green-600', buttonBgLight: 'bg-green-100', buttonHoverLight: 'hover:bg-green-200', buttonDarkerBg: 'bg-green-600', buttonDarkerHover: 'hover:bg-green-700' },
+    せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200', buttonBg: 'bg-purple-500', buttonHover: 'hover:bg-purple-600', buttonBgLight: 'bg-purple-100', buttonHoverLight: 'hover:bg-purple-200', buttonDarkerBg: 'bg-purple-600', buttonDarkerHover: 'hover:bg-purple-700' },
+    るちえ: { headerBg: 'bg-amber-400', headerSubText: 'text-amber-100', footerBg: 'bg-amber-50', footerBorder: 'border-amber-200', buttonBg: 'bg-amber-500', buttonHover: 'hover:bg-amber-600', buttonBgLight: 'bg-amber-100', buttonHoverLight: 'hover:bg-amber-200', buttonDarkerBg: 'bg-amber-600', buttonDarkerHover: 'hover:bg-amber-700' },
   };
 
   const userTheme = USER_THEME_CLASSES[currentUser] ?? {
@@ -79,6 +79,12 @@ export default function ChatPage() {
     headerSubText: 'text-violet-200',
     footerBg: 'bg-violet-50',
     footerBorder: 'border-violet-200',
+    buttonBg: 'bg-violet-500',
+    buttonHover: 'hover:bg-violet-600',
+    buttonBgLight: 'bg-violet-100',
+    buttonHoverLight: 'hover:bg-violet-200',
+    buttonDarkerBg: 'bg-violet-600',
+    buttonDarkerHover: 'hover:bg-violet-700',
   };
 
   // VAPID base64 → Uint8Array 変換ユーティリティ
@@ -308,7 +314,7 @@ export default function ChatPage() {
           <p className={`${userTheme.headerSubText} text-xs`}>MINE</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-violet-700 rounded-full p-1">
+          <div className={`flex items-center gap-1 ${userTheme.buttonDarkerBg} rounded-full p-1`}>
             <span className="px-1 text-[10px] text-violet-200">文字</span>
             {([
               { value: 'small', label: '小' },
@@ -320,7 +326,7 @@ export default function ChatPage() {
                 onClick={() => setMessageFontSize(size.value)}
                 aria-label={`文字サイズ${size.label}`}
                 aria-pressed={messageFontSize === size.value}
-                className={`h-8 min-w-8 px-2 rounded-full text-xs font-semibold transition-colors ${messageFontSize === size.value ? 'bg-white text-violet-700' : 'text-white hover:bg-violet-600'}`}
+                className={`h-8 min-w-8 px-2 rounded-full text-xs font-semibold transition-colors ${messageFontSize === size.value ? 'bg-white' : 'text-white'}`}
               >
                 {size.label}
               </button>
@@ -330,7 +336,7 @@ export default function ChatPage() {
             <button
               onClick={() => requestNotificationPermission(currentUser)}
               aria-label="通知を許可"
-              className="flex items-center gap-1.5 text-sm bg-violet-500 hover:bg-violet-400 px-4 py-2 rounded-full"
+              className={`flex items-center gap-1.5 text-sm text-white ${userTheme.buttonBg} ${userTheme.buttonHover} px-4 py-2 rounded-full`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               通知ON
@@ -345,7 +351,7 @@ export default function ChatPage() {
               router.push('/');
             }}
             aria-label="ユーザー変更"
-            className="w-9 h-9 flex items-center justify-center bg-violet-700 hover:bg-violet-800 rounded-full"
+            className={`w-9 h-9 flex items-center justify-center ${userTheme.buttonDarkerBg} ${userTheme.buttonDarkerHover} rounded-full`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -418,7 +424,7 @@ export default function ChatPage() {
         <button
           onClick={scrollToBottom}
           aria-label="最新へ移動"
-          className="fixed top-[70px] right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700"
+          className={`fixed top-[70px] right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBg} text-white shadow-lg ${userTheme.buttonHover}`}
         >
           ↓
         </button>
@@ -438,7 +444,7 @@ export default function ChatPage() {
                 <button
                   key={t.key}
                   onClick={() => setActiveCannedTab(t.key)}
-                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? 'bg-violet-600 text-white' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
+                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? `${userTheme.buttonBg} text-white` : `${userTheme.buttonBgLight} hover:bg-opacity-80`}`}
                 >
                   {t.label}
                 </button>
@@ -468,7 +474,7 @@ export default function ChatPage() {
             onClick={() => setCannedOpen((s) => !s)}
             aria-pressed={cannedOpen}
             aria-label="定型文"
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -488,11 +494,11 @@ export default function ChatPage() {
             </svg>
           </button>
           <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-          <button onClick={() => mediaInputRef.current?.click()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200">
+          <button onClick={() => mediaInputRef.current?.click()} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
           <div className="flex-1" />
-          <button onClick={sendText} disabled={!inputText.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xl">➤</button>
+          <button onClick={sendText} disabled={!inputText.trim()} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBg} ${userTheme.buttonHover} text-white text-xl disabled:opacity-50`}>➤</button>
         </div>
       </div>
     </div>
