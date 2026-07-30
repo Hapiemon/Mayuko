@@ -15,9 +15,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'file, sender, media_type are required' }, { status: 400 });
     }
 
+    const storeId = process.env.mayuko_STORE_ID || process.env.BLOB_STORE_ID || process.env.STORE_ID;
+
     // Vercel Blob にアップロード
     const blob = await put(`chat/${Date.now()}-${file.name}`, file, {
       access: 'public',
+      ...(storeId ? { storeId } : {}),
     });
 
     // DB にメッセージレコードを保存
