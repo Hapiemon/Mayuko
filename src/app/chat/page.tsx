@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'>('greeting');
 
@@ -101,6 +102,15 @@ export default function ChatPage() {
     }
   };
 
+  const scrollToBottom = () => {
+    if (!messagesRef.current) return;
+    try {
+      messagesRef.current.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
+    } catch (e) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  };
+
   if (!currentUser) {
     return null;
   }
@@ -123,7 +133,7 @@ export default function ChatPage() {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+      <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {messages.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.sender === currentUser ? 'items-end' : 'items-start'}`}>
             <span className={`text-xs font-semibold mb-1 ${m.sender === currentUser ? 'text-right text-violet-500' : 'text-left text-gray-500'}`}>{m.sender}</span>
@@ -142,6 +152,13 @@ export default function ChatPage() {
       </div>
 
       <div className="border-t bg-white px-4 py-3 relative">
+        <button
+          onClick={scrollToBottom}
+          aria-label="最新へ移動"
+          className="absolute -top-5 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700"
+        >
+          ↓
+        </button>
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="flex gap-2 mb-2 overflow-auto">
