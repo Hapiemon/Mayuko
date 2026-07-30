@@ -15,20 +15,22 @@ export default function Home() {
 
   const selectUser = async (name: string) => {
     sessionStorage.setItem('chatUser', name);
-    // ログイン通知を他のユーザーに送信（自分には送らない）
-    try {
-      await fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'MINE',
-          body: `${name}がログインしました`,
-          url: '/chat',
-          excludeUser: name,
-        }),
-      });
-    } catch {
-      // 通知失敗してもログインは続行
+    // まゆこだけログイン通知を送信
+    if (name === 'まゆこ') {
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'MINE',
+            body: `${name}がログインしました`,
+            url: '/chat',
+            excludeUser: name,
+          }),
+        });
+      } catch {
+        // 通知失敗してもログインは続行
+      }
     }
     router.push('/chat');
   };
