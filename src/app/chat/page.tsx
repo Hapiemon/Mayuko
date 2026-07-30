@@ -219,6 +219,15 @@ export default function ChatPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
+  // inputText変更時にtextareaの高さを調整
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 440) + 'px';
+    }
+  }, [inputText]);
+
   if (!currentUser) {
     return null;
   }
