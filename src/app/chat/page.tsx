@@ -56,6 +56,16 @@ export default function ChatPage() {
     entertainment: ['ワンエン','EBiDAN','HAYATO','YouTube','動画','テレビ','TVer','アマプラ','SNS','VIVANT'],
   };
 
+  const USER_BUBBLE_CLASSES: Record<string, string> = {
+    まゆこ: 'bg-pink-400 text-white',
+    だいや: 'bg-blue-400 text-white',
+    あつと: 'bg-green-400 text-white',
+    せれな: 'bg-purple-400 text-white',
+    るちえ: 'bg-amber-400 text-white',
+  };
+
+  const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'bg-violet-600 text-white';
+
   // VAPID base64 → Uint8Array 変換ユーティリティ
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -360,7 +370,7 @@ export default function ChatPage() {
                   setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
                 }
               }}
-              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'bg-violet-600 text-white cursor-pointer active:scale-[0.99]' : 'bg-white text-gray-800 border border-gray-200'}`}
+              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'bg-violet-600 text-white cursor-pointer active:scale-[0.99]' : `${getBubbleClass(m.sender)} border border-gray-200`}`}
             >
               {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
