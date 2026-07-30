@@ -276,9 +276,25 @@ export default function ChatPage() {
               sessionStorage.removeItem('chatUser');
               router.push('/');
             }}
-            className="text-sm bg-violet-700 hover:bg-violet-800 px-3 py-1 rounded-full"
+            aria-label="ユーザー変更"
+            className="w-9 h-9 flex items-center justify-center bg-violet-700 hover:bg-violet-800 rounded-full"
           >
-            変更
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </button>
         </div>
       </header>
