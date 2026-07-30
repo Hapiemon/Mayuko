@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -218,6 +219,12 @@ export default function ChatPage() {
 
   if (!currentUser) return null;
 
+  const scrollToBottom = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col h-dvh bg-white">
       {/* Header */}
@@ -245,7 +252,7 @@ export default function ChatPage() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {messages.map((msg) => {
           const isMine = msg.sender === currentUser;
           const showDelete = isMine && selectedMessageId === msg.id;
@@ -311,7 +318,14 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t bg-white px-4 py-3">
+      <div className="border-t bg-white px-4 py-3 relative">
+        <button
+          onClick={scrollToBottom}
+          aria-label="最新へ移動"
+          className="absolute -top-3 right-4 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md"
+        >
+          ↓
+        </button>
         {uploading && (
           <p className="text-center text-sm text-violet-500 mb-2">アップロード中...</p>
         )}
