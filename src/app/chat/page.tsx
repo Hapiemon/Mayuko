@@ -370,7 +370,7 @@ export default function ChatPage() {
                   setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
                 }
               }}
-              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'border-2 border-violet-600 bg-white text-gray-900 cursor-pointer active:scale-[0.99]' : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
+              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
             >
               {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
