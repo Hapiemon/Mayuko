@@ -27,6 +27,7 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting' | 'state' | 'place' | 'people' | 'body' | 'thing' | 'syntax'>('greeting');
 
   const TABS: { key: 'greeting' | 'state' | 'place' | 'people' | 'body' | 'thing' | 'syntax'; label: string }[] = [
@@ -246,6 +247,30 @@ export default function ChatPage() {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   };
+
+  // スクロール位置を監視して一番下ならボタンを隠す
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const threshold = 20; // px
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+      setShowScrollBtn(!atBottom);
+    };
+
+    // 初期チェック
+    check();
+
+    el.addEventListener('scroll', check, { passive: true });
+    // 画面リサイズ時も再チェック
+    window.addEventListener('resize', check);
+
+    return () => {
+      el.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-dvh bg-white">
