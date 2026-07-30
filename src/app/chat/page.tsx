@@ -96,7 +96,25 @@ export default function ChatPage() {
       formData.append('file', file);
       formData.append('sender', currentUser);
       formData.append('media_type', isImage ? 'image' : 'video');
-      await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        let message = 'アップロードに失敗しました';
+        try {
+          const data = await res.json();
+          if (typeof data?.error === 'string' && data.error.length > 0) {
+            message = data.error;
+          }
+        } catch {
+          // ignore parse error
+        }
+
+        if (isVideo) {
+          alert(`動画の共有に失敗しました。\n${message}\n\n※Vercelのサーバー経由アップロードでは大きい動画(目安4.5MB超)は失敗することがあります。`);
+        } else {
+          alert(`画像の共有に失敗しました。\n${message}`);
+        }
+        return;
+      }
       await fetchMessages();
     } finally {
       setUploading(false);

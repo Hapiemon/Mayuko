@@ -15,6 +15,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'file, sender, media_type are required' }, { status: 400 });
     }
 
+    const maxSizeBytes = 4.5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      return NextResponse.json(
+        { error: 'ファイルサイズが大きすぎます。4.5MB以下のファイルを選択してください。' },
+        { status: 413 }
+      );
+    }
+
     const storeId = process.env.mayuko_STORE_ID || process.env.BLOB_STORE_ID || process.env.STORE_ID;
 
     // Vercel Blob にアップロード
