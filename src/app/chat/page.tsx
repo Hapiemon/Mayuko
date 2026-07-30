@@ -296,7 +296,14 @@ export default function ChatPage() {
                 </button>
               )}
               <span className="text-xs text-gray-400 mt-1">
-                {new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(msg.created_at).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
               </span>
             </div>
           );
