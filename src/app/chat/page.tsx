@@ -24,11 +24,11 @@ export default function ChatPage() {
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'>('greeting');
 
   const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'; label: string }[] = [
-    { key: 'greeting', label: 'あいさつ系' },
+    { key: 'greeting', label: '挨拶' },
     { key: 'state', label: '状態' },
     { key: 'place', label: '場所' },
     { key: 'people', label: '人名' },
-    { key: 'body', label: '体のパーツ' },
+    { key: 'body', label: '体' },
     { key: 'thing', label: '物' },
     { key: 'syntax', label: '構文' },
   ];
