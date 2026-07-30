@@ -66,12 +66,12 @@ export default function ChatPage() {
 
   const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-white text-gray-900';
 
-  const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string }> = {
-    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700' },
-    だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200', buttonBg: 'bg-blue-500', buttonHover: 'hover:bg-blue-600', buttonBgLight: 'bg-blue-100', buttonHoverLight: 'hover:bg-blue-200', buttonDarkerBg: 'bg-blue-600', buttonDarkerHover: 'hover:bg-blue-700' },
-    あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200', buttonBg: 'bg-green-500', buttonHover: 'hover:bg-green-600', buttonBgLight: 'bg-green-100', buttonHoverLight: 'hover:bg-green-200', buttonDarkerBg: 'bg-green-600', buttonDarkerHover: 'hover:bg-green-700' },
-    せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200', buttonBg: 'bg-purple-500', buttonHover: 'hover:bg-purple-600', buttonBgLight: 'bg-purple-100', buttonHoverLight: 'hover:bg-purple-200', buttonDarkerBg: 'bg-purple-600', buttonDarkerHover: 'hover:bg-purple-700' },
-    るちえ: { headerBg: 'bg-amber-400', headerSubText: 'text-amber-100', footerBg: 'bg-amber-50', footerBorder: 'border-amber-200', buttonBg: 'bg-amber-500', buttonHover: 'hover:bg-amber-600', buttonBgLight: 'bg-amber-100', buttonHoverLight: 'hover:bg-amber-200', buttonDarkerBg: 'bg-amber-600', buttonDarkerHover: 'hover:bg-amber-700' },
+  const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string; cannedWindowBg: string; cannedTextColor: string; cannedHover: string; cannedBorder: string }> = {
+    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700', cannedWindowBg: 'bg-pink-100', cannedTextColor: 'text-pink-700', cannedHover: 'hover:bg-pink-200', cannedBorder: 'border-pink-300' },
+    だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200', buttonBg: 'bg-blue-500', buttonHover: 'hover:bg-blue-600', buttonBgLight: 'bg-blue-100', buttonHoverLight: 'hover:bg-blue-200', buttonDarkerBg: 'bg-blue-600', buttonDarkerHover: 'hover:bg-blue-700', cannedWindowBg: 'bg-blue-100', cannedTextColor: 'text-blue-700', cannedHover: 'hover:bg-blue-200', cannedBorder: 'border-blue-300' },
+    あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200', buttonBg: 'bg-green-500', buttonHover: 'hover:bg-green-600', buttonBgLight: 'bg-green-100', buttonHoverLight: 'hover:bg-green-200', buttonDarkerBg: 'bg-green-600', buttonDarkerHover: 'hover:bg-green-700', cannedWindowBg: 'bg-green-100', cannedTextColor: 'text-green-700', cannedHover: 'hover:bg-green-200', cannedBorder: 'border-green-300' },
+    せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200', buttonBg: 'bg-purple-500', buttonHover: 'hover:bg-purple-600', buttonBgLight: 'bg-purple-100', buttonHoverLight: 'hover:bg-purple-200', buttonDarkerBg: 'bg-purple-600', buttonDarkerHover: 'hover:bg-purple-700', cannedWindowBg: 'bg-purple-100', cannedTextColor: 'text-purple-700', cannedHover: 'hover:bg-purple-200', cannedBorder: 'border-purple-300' },
+    るちえ: { headerBg: 'bg-amber-400', headerSubText: 'text-amber-100', footerBg: 'bg-amber-50', footerBorder: 'border-amber-200', buttonBg: 'bg-amber-500', buttonHover: 'hover:bg-amber-600', buttonBgLight: 'bg-amber-100', buttonHoverLight: 'hover:bg-amber-200', buttonDarkerBg: 'bg-amber-600', buttonDarkerHover: 'hover:bg-amber-700', cannedWindowBg: 'bg-amber-100', cannedTextColor: 'text-amber-700', cannedHover: 'hover:bg-amber-200', cannedBorder: 'border-amber-300' },
   };
 
   const userTheme = USER_THEME_CLASSES[currentUser] ?? {
@@ -85,6 +85,10 @@ export default function ChatPage() {
     buttonHoverLight: 'hover:bg-violet-200',
     buttonDarkerBg: 'bg-violet-600',
     buttonDarkerHover: 'hover:bg-violet-700',
+    cannedWindowBg: 'bg-violet-100',
+    cannedTextColor: 'text-violet-700',
+    cannedHover: 'hover:bg-violet-200',
+    cannedBorder: 'border-violet-300',
   };
 
   // VAPID base64 → Uint8Array 変換ユーティリティ
@@ -432,10 +436,10 @@ export default function ChatPage() {
 
       <div className={`border-t ${userTheme.footerBorder} ${userTheme.footerBg} px-4 py-3 relative`}>
         {/* canned phrases overlay */}
-        <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`absolute left-4 right-4 bottom-full mb-3 ${userTheme.cannedWindowBg} border ${userTheme.cannedBorder} rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {CANNED_PHRASES[activeCannedTab].map((p) => (
-              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200">{p}</button>
+              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className={`px-3 py-2 bg-white rounded-lg text-sm ${userTheme.cannedTextColor} ${userTheme.cannedHover}`}>{p}</button>
             ))}
           </div>
           <div className="flex items-center gap-1">
@@ -444,7 +448,7 @@ export default function ChatPage() {
                 <button
                   key={t.key}
                   onClick={() => setActiveCannedTab(t.key)}
-                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? `${userTheme.buttonBg} text-white` : `${userTheme.buttonBgLight} hover:bg-opacity-80`}`}
+                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? `${userTheme.buttonBg} text-white` : `bg-white ${userTheme.cannedTextColor}`}`}
                 >
                   {t.label}
                 </button>
