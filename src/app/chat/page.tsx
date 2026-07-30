@@ -22,6 +22,7 @@ export default function ChatPage() {
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'>('greeting');
 
   const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'; label: string }[] = [
@@ -111,6 +112,27 @@ export default function ChatPage() {
     }
   };
 
+  const checkScrollBottom = () => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distFromBottom > 60);
+  };
+
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScrollBottom, { passive: true });
+    return () => el.removeEventListener('scroll', checkScrollBottom);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  // メッセージ更新時にも位置チェック
+  useEffect(() => {
+    checkScrollBottom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
   if (!currentUser) {
     return null;
   }
@@ -151,14 +173,17 @@ export default function ChatPage() {
         ))}
       </div>
 
-      <div className="border-t bg-white px-4 py-3 relative">
+      {showScrollBtn && (
         <button
           onClick={scrollToBottom}
           aria-label="最新へ移動"
-          className="absolute -top-5 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700"
+          className="fixed bottom-24 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700"
         >
           ↓
         </button>
+      )}
+
+      <div className="border-t bg-white px-4 py-3 relative">
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="flex gap-2 mb-2 overflow-auto">
