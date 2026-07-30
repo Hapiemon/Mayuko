@@ -326,10 +326,10 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className={`border-t bg-white px-4 py-3 relative transition-transform duration-200 ${cannedOpen ? '-translate-y-40' : ''}`}>
-        {/* 定型文パネル（フッター上にせり上がる） */}
+      <div className="border-t bg-white px-4 py-3 relative">
+        {/* 定型文パネル（フッター上にオーバーレイ表示） */}
         <div
-          className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transform transition-all duration-200 origin-bottom ${cannedOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}
+          className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transform transition-all duration-200 origin-bottom z-20 ${cannedOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}
         >
           <div className="flex gap-2 mb-2">
             <button
