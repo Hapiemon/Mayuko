@@ -22,6 +22,7 @@ export default function ChatPage() {
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
@@ -162,6 +163,16 @@ export default function ChatPage() {
     } finally {
       setUploading(false);
       if (mediaInputRef.current) mediaInputRef.current.value = '';
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputText(value);
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 440) + 'px';
     }
   };
 
@@ -324,12 +335,26 @@ export default function ChatPage() {
         </div>
 
         {uploading && <p className="text-center text-sm text-violet-500 mb-2">アップロード中...</p>}
-        <div className="flex items-end gap-2">
+
+        <div className="mb-3">
+          <textarea
+            ref={textareaRef}
+            value={inputText}
+            onChange={handleInputChange}
+            placeholder="メッセージを入力..."
+            rows={1}
+            className="w-full resize-none rounded-2xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-600"
+            style={{ maxHeight: '440px', overflow: 'auto', height: '40px' }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setCannedOpen((s) => !s)}
             aria-pressed={cannedOpen}
             aria-label="定型文"
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 mr-2"
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -352,7 +377,6 @@ export default function ChatPage() {
           <button onClick={() => mediaInputRef.current?.click()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
-          <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="メッセージを入力..." rows={1} className="flex-1 resize-none rounded-2xl border border-gray-300 px-4 py-2 text-sm focus:outline-none" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }} />
           <button onClick={sendText} disabled={!inputText.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xl">➤</button>
         </div>
       </div>
