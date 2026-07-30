@@ -260,7 +260,7 @@ export default function ChatPage() {
       </header>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 pb-28 space-y-4 bg-gray-50">
         {messages.map((msg) => {
           const isMine = msg.sender === currentUser;
           const showDelete = isMine && selectedMessageId === msg.id;
@@ -390,6 +390,8 @@ export default function ChatPage() {
           <button
             onClick={() => setCannedOpen((s) => !s)}
             aria-label="定型文"
+            aria-expanded={cannedOpen}
+            aria-pressed={cannedOpen}
             className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 mr-2"
             title="定型文"
           >
