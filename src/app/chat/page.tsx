@@ -340,10 +340,14 @@ export default function ChatPage() {
           <button
             onClick={() => mediaInputRef.current?.click()}
             disabled={uploading || sending}
-            className="flex-shrink-0 h-10 px-3 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-xs font-semibold disabled:opacity-50"
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
             title="画像・動画を共有"
+            aria-label="画像・動画を共有"
           >
-            📷
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
           </button>
           <textarea
             value={inputText}
