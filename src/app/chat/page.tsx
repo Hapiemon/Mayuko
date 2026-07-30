@@ -23,6 +23,7 @@ export default function ChatPage() {
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'>('greeting');
 
   const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'; label: string }[] = [
@@ -45,6 +46,54 @@ export default function ChatPage() {
     syntax: ['お願いします','不要です','してます','どうかな？'],
   };
 
+  // VAPID base64 → Uint8Array 変換ユーティリティ
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  };
+
+  // Push購読を登録してサーバーに保存
+  const registerPush = async (user: string) => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const sub = existing ?? await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+      });
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), user }),
+      });
+    } catch (e) {
+      console.error('Push registration failed:', e);
+    }
+  };
+
+  // 通知許可を要求してPush登録
+  const requestNotificationPermission = async (user: string) => {
+    if (!('Notification' in window)) return;
+    const result = await Notification.requestPermission();
+    setPushPermission(result);
+    if (result === 'granted') {
+      await registerPush(user);
+    }
+  };
+
+  // Push通知を送信（自分以外に）
+  const notifyPush = (title: string, body: string, excludeUser: string) => {
+    fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body, url: '/chat', excludeUser }),
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
     if (!user) {
@@ -52,6 +101,15 @@ export default function ChatPage() {
       return;
     }
     setCurrentUser(user);
+    // 既に許可済みならサイレント登録
+    if ('Notification' in window) {
+      const perm = Notification.permission;
+      setPushPermission(perm);
+      if (perm === 'granted') {
+        registerPush(user);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const fetchMessages = async () => {
@@ -74,13 +132,15 @@ export default function ChatPage() {
 
   const sendText = async () => {
     if (!inputText.trim()) return;
+    const text = inputText.trim();
     try {
       await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: currentUser, content: inputText.trim() }),
+        body: JSON.stringify({ sender: currentUser, content: text }),
       });
       setInputText('');
+      notifyPush('MINE', `${currentUser}: ${text}`, currentUser);
       await fetchMessages();
     } catch {}
   };
@@ -94,6 +154,7 @@ export default function ChatPage() {
       fd.append('sender', currentUser);
       fd.append('media_type', file.type.startsWith('image/') ? 'image' : 'video');
       await fetch('/api/upload', { method: 'POST', body: fd });
+      notifyPush('MINE', `${currentUser}がファイルを送信しました`, currentUser);
       await fetchMessages();
     } catch (e) {
       // ignore
@@ -144,15 +205,30 @@ export default function ChatPage() {
           <p className="font-bold text-lg leading-tight">{currentUser}</p>
           <p className="text-violet-200 text-xs">MINE</p>
         </div>
-        <button
-          onClick={() => {
-            sessionStorage.removeItem('chatUser');
-            router.push('/');
-          }}
-          className="text-sm bg-violet-700 hover:bg-violet-800 px-3 py-1 rounded-full"
-        >
-          変更
-        </button>
+        <div className="flex items-center gap-2">
+          {pushPermission !== 'granted' && pushPermission !== 'denied' && (
+            <button
+              onClick={() => requestNotificationPermission(currentUser)}
+              aria-label="通知を許可"
+              className="flex items-center gap-1 text-xs bg-violet-500 hover:bg-violet-400 px-3 py-1 rounded-full"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              通知ON
+            </button>
+          )}
+          {pushPermission === 'denied' && (
+            <span className="text-xs text-violet-300">通知ブロック中</span>
+          )}
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('chatUser');
+              router.push('/');
+            }}
+            className="text-sm bg-violet-700 hover:bg-violet-800 px-3 py-1 rounded-full"
+          >
+            変更
+          </button>
+        </div>
       </header>
 
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">

@@ -15,20 +15,17 @@ export default function Home() {
 
   const selectUser = async (name: string) => {
     sessionStorage.setItem('chatUser', name);
-    // まゆこだけログイン通知を送信
-    if (name === 'まゆこ') {
-      // 非同期で投げる（遷移をブロックしない）
-      fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'MINE',
-          body: `${name}がログインしました`,
-          url: '/chat',
-          excludeUser: name,
-        }),
-      }).catch(() => {});
-    }
+    // まゆこのみログイン通知を送信（自分以外に通知）
+    if (name === 'まゆこ') fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'MINE',
+        body: `${name}がログインしました`,
+        url: '/chat',
+        excludeUser: name,
+      }),
+    }).catch(() => {});
     router.push('/chat');
   };
 
