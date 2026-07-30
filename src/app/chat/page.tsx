@@ -23,7 +23,6 @@ export default function ChatPage() {
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
-  const bottomRef = useRef<HTMLDivElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -91,10 +90,6 @@ export default function ChatPage() {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [currentUser, fetchMessages, registerPush]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   useEffect(() => {
     if (selectedMessageId === null) return;
@@ -306,7 +301,6 @@ export default function ChatPage() {
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
