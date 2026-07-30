@@ -108,7 +108,7 @@ export default function ChatPage() {
     messageFontSize === 'small'
       ? 'text-xs'
       : messageFontSize === 'large'
-        ? 'text-base'
+        ? 'text-lg'
         : 'text-sm';
 
   useEffect(() => {
