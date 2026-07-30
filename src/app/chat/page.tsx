@@ -322,7 +322,7 @@ export default function ChatPage() {
         <button
           onClick={scrollToBottom}
           aria-label="最新へ移動"
-          className="absolute -top-3 right-4 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md"
+          className="absolute -top-10 right-4 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md z-10"
         >
           ↓
         </button>
