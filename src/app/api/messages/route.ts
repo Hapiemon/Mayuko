@@ -38,3 +38,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
 }
+
+// DELETE /api/messages — 自分のメッセージのみ削除
+export async function DELETE(req: NextRequest) {
+  try {
+    const sql = getSql();
+    const { id, sender } = await req.json();
+
+    if (!id || !sender) {
+      return NextResponse.json({ error: 'id and sender are required' }, { status: 400 });
+    }
+
+    const rows = await sql`
+      DELETE FROM messages
+      WHERE id = ${id} AND sender = ${sender}
+      RETURNING id
+    `;
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'message not found or not owned by sender' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  }
+}

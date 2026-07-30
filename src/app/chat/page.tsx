@@ -20,6 +20,8 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +60,13 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (selectedMessageId === null) return;
+    if (!messages.some((message) => message.id === selectedMessageId)) {
+      setSelectedMessageId(null);
+    }
+  }, [messages, selectedMessageId]);
 
   const sendText = async () => {
     if (!inputText.trim() || sending) return;
@@ -116,6 +125,33 @@ export default function ChatPage() {
     }
   };
 
+  const toggleMessageAction = (message: Message) => {
+    if (message.sender !== currentUser) return;
+    setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
+  };
+
+  const deleteMessage = async (messageId: number) => {
+    if (deletingId !== null) return;
+    setDeletingId(messageId);
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: messageId, sender: currentUser }),
+      });
+
+      if (!res.ok) {
+        alert('削除に失敗しました');
+        return;
+      }
+
+      setSelectedMessageId(null);
+      await fetchMessages();
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (!currentUser) return null;
 
   return (
@@ -138,6 +174,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {messages.map((msg) => {
           const isMine = msg.sender === currentUser;
+          const showDelete = isMine && selectedMessageId === msg.id;
           return (
             <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
               {/* Sender name */}
@@ -146,11 +183,12 @@ export default function ChatPage() {
               </span>
               {/* Bubble */}
               <div
+                onClick={() => toggleMessageAction(msg)}
                 className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm ${
                   isMine
                     ? 'bg-violet-600 text-white rounded-br-none'
                     : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
-                }`}
+                } ${isMine ? 'cursor-pointer' : ''}`}
               >
                 {msg.content && <p className="whitespace-pre-wrap break-words text-sm">{msg.content}</p>}
                 {msg.media_url && msg.media_type === 'image' && (
@@ -172,6 +210,15 @@ export default function ChatPage() {
                   />
                 )}
               </div>
+              {showDelete && (
+                <button
+                  onClick={() => deleteMessage(msg.id)}
+                  disabled={deletingId === msg.id}
+                  className="mt-2 text-xs px-3 py-1 rounded-full bg-red-500 text-white disabled:opacity-50"
+                >
+                  {deletingId === msg.id ? '削除中...' : '削除'}
+                </button>
+              )}
               <span className="text-xs text-gray-400 mt-1">
                 {new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
               </span>
