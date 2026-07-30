@@ -27,12 +27,26 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
-  const [activeCannedTab, setActiveCannedTab] = useState<'greeting' | 'adj' | 'reply'>('greeting');
+  const [activeCannedTab, setActiveCannedTab] = useState<'greeting' | 'state' | 'place' | 'people' | 'body' | 'thing' | 'syntax'>('greeting');
+
+  const TABS: { key: 'greeting' | 'state' | 'place' | 'people' | 'body' | 'thing' | 'syntax'; label: string }[] = [
+    { key: 'greeting', label: '挨拶' },
+    { key: 'state', label: '状態' },
+    { key: 'place', label: '場所' },
+    { key: 'people', label: '人名' },
+    { key: 'body', label: '体' },
+    { key: 'thing', label: '物' },
+    { key: 'syntax', label: '構文' },
+  ];
 
   const CANNED_PHRASES: Record<string, string[]> = {
-    greeting: ['おはよう', 'こんにちは', 'こんばんは', 'お疲れさま'],
-    adj: ['素敵', 'すごい', 'かわいい', 'いいね'],
-    reply: ['わかった', 'ありがとう', '了解', 'あとで確認します'],
+    greeting: ['おはよう', 'おやすみ', 'ありがとう', 'よろしく', 'お願いします', 'OK'],
+    state: ['◯', '×', '大丈夫', 'しんどい', '良い', '悪い', '楽しい', '嬉しい', '苦しい', '悲しい', '痛い'],
+    place: ['健軍アパート', 'くもん', '病院', 'おじいちゃん家', '市役所', '空港', '熊本', '東京'],
+    people: ['おじいちゃん', 'ぼけまら', 'お姉ちゃん', 'あつと', '妹', 'なんとか兄ちゃん', '北海道のおばあちゃん'],
+    body: ['あたま', '腕', '手', 'おなか', '腰', '背中', '足', '目', '耳', '鼻', '口'],
+    thing: ['スマホ', '食べ物', '飲み物', '書類'],
+    syntax: ['お願いします', '不要です', 'してます', 'どうかな？'],
   };
 
   useEffect(() => {
@@ -331,25 +345,16 @@ export default function ChatPage() {
         <div
           className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transform transition-all duration-200 origin-bottom z-20 ${cannedOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}
         >
-          <div className="flex gap-2 mb-2">
-            <button
-              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'greeting' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveCannedTab('greeting')}
-            >
-              挨拶
-            </button>
-            <button
-              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'adj' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveCannedTab('adj')}
-            >
-              形容詞
-            </button>
-            <button
-              className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === 'reply' ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveCannedTab('reply')}
-            >
-              返事
-            </button>
+          <div className="flex gap-2 mb-2 overflow-auto">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                className={`px-3 py-1 rounded-full text-sm ${activeCannedTab === t.key ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setActiveCannedTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
             <div className="flex-1" />
             <button
               onClick={() => setCannedOpen(false)}
