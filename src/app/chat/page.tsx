@@ -66,6 +66,21 @@ export default function ChatPage() {
 
   const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-white text-gray-900';
 
+  const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string }> = {
+    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200' },
+    だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200' },
+    あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200' },
+    せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200' },
+    るちえ: { headerBg: 'bg-amber-400', headerSubText: 'text-amber-100', footerBg: 'bg-amber-50', footerBorder: 'border-amber-200' },
+  };
+
+  const userTheme = USER_THEME_CLASSES[currentUser] ?? {
+    headerBg: 'bg-violet-600',
+    headerSubText: 'text-violet-200',
+    footerBg: 'bg-violet-50',
+    footerBorder: 'border-violet-200',
+  };
+
   // VAPID base64 → Uint8Array 変換ユーティリティ
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -287,10 +302,10 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-dvh bg-white">
-      <header className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
+      <header className={`flex items-center justify-between px-4 py-3 ${userTheme.headerBg} text-white`}>
         <div>
           <p className="font-bold text-lg leading-tight">{currentUser}</p>
-          <p className="text-violet-200 text-xs">MINE</p>
+          <p className={`${userTheme.headerSubText} text-xs`}>MINE</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-violet-700 rounded-full p-1">
@@ -409,7 +424,7 @@ export default function ChatPage() {
         </button>
       )}
 
-      <div className="border-t bg-white px-4 py-3 relative">
+      <div className={`border-t ${userTheme.footerBorder} ${userTheme.footerBg} px-4 py-3 relative`}>
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="grid grid-cols-3 gap-2 mb-3">
