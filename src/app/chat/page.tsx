@@ -11,6 +11,7 @@ interface Message {
   media_url: string | null;
   media_type: 'image' | 'video' | null;
   created_at: string;
+  mayuko_read_status?: 'まゆこ未読' | 'まゆこ既読';
 }
 
 export default function ChatPage() {
@@ -129,9 +130,22 @@ export default function ChatPage() {
     }
   };
 
+  const markMayukoRead = async () => {
+    try {
+      await fetch('/api/messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewer: currentUser }),
+      });
+    } catch {}
+  };
+
   useEffect(() => {
     if (!currentUser) return;
     fetchMessages();
+    if (currentUser === 'まゆこ') {
+      markMayukoRead().then(() => fetchMessages());
+    }
     const id = setInterval(fetchMessages, 3000);
     return () => clearInterval(id);
   }, [currentUser]);
@@ -308,6 +322,7 @@ export default function ChatPage() {
                 </button>
               )}
             </div>
+            <span className="text-[11px] text-gray-400 mt-1">{m.mayuko_read_status ?? 'まゆこ未読'}</span>
             <span className="text-xs text-gray-400 mt-1">{new Date(m.created_at).toLocaleString('ja-JP')}</span>
           </div>
         ))}

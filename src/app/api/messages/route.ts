@@ -3,12 +3,26 @@ import { getSql } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+async function ensureSchema() {
+  const sql = getSql();
+  await sql`
+    ALTER TABLE messages
+    ADD COLUMN IF NOT EXISTS mayuko_read_at TIMESTAMPTZ
+  `;
+}
+
 // GET /api/messages — 全メッセージ取得
 export async function GET() {
   try {
+    await ensureSchema();
     const sql = getSql();
     const rows = await sql`
-      SELECT id, sender, content, media_url, media_type, created_at
+      SELECT id, sender, content, media_url, media_type, created_at,
+        CASE
+          WHEN sender = 'まゆこ' THEN 'まゆこ既読'
+          WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
+          ELSE 'まゆこ既読'
+        END AS mayuko_read_status
       FROM messages
       ORDER BY created_at ASC
       LIMIT 200
@@ -23,6 +37,7 @@ export async function GET() {
 // POST /api/messages — テキストメッセージ送信
 export async function POST(req: NextRequest) {
   try {
+    await ensureSchema();
     const sql = getSql();
     const { sender, content } = await req.json();
     if (!sender || !content?.trim()) {
@@ -42,6 +57,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/messages — 自分のメッセージのみ削除
 export async function DELETE(req: NextRequest) {
   try {
+    await ensureSchema();
     const sql = getSql();
     const { id, sender } = await req.json();
 
@@ -58,6 +74,30 @@ export async function DELETE(req: NextRequest) {
     if (rows.length === 0) {
       return NextResponse.json({ error: 'message not found or not owned by sender' }, { status: 404 });
     }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  }
+}
+
+// PATCH /api/messages — まゆこが表示した時点で既読化
+export async function PATCH(req: NextRequest) {
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const { viewer } = await req.json();
+
+    if (viewer !== 'まゆこ') {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    await sql`
+      UPDATE messages
+      SET mayuko_read_at = NOW()
+      WHERE sender != 'まゆこ' AND mayuko_read_at IS NULL
+    `;
 
     return NextResponse.json({ ok: true });
   } catch (err) {
