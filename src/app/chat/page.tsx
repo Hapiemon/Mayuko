@@ -186,14 +186,19 @@ export default function ChatPage() {
       <div className="border-t bg-white px-4 py-3 relative">
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 bg-white rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <div className="flex gap-2 mb-2 overflow-auto">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setActiveCannedTab(t.key)} className={`px-3 py-1 rounded-full text-sm ${activeCannedTab===t.key? 'bg-violet-600 text-white':'bg-gray-100 text-gray-700'}`}>
-                {t.label}
-              </button>
-            ))}
-            <div className="flex-1" />
-            <button onClick={() => setCannedOpen(false)} className="px-2 py-1 text-xs text-gray-500">閉じる</button>
+          <div className="flex items-center gap-1 mb-3">
+            <div className="flex gap-1 overflow-x-auto flex-nowrap flex-1 min-w-0 pb-1">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveCannedTab(t.key)}
+                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? 'bg-violet-600 text-white' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600">✕</button>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {CANNED_PHRASES[activeCannedTab].map((p) => (
