@@ -305,9 +305,9 @@ export default function ChatPage() {
             <button
               onClick={() => requestNotificationPermission(currentUser)}
               aria-label="通知を許可"
-              className="flex items-center gap-1 text-xs bg-violet-500 hover:bg-violet-400 px-3 py-1 rounded-full"
+              className="flex items-center gap-1.5 text-sm bg-violet-500 hover:bg-violet-400 px-4 py-2 rounded-full"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               通知ON
             </button>
           )}
@@ -457,7 +457,7 @@ export default function ChatPage() {
               strokeLinejoin="round"
               className="text-gray-700"
             >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <path d="M21 15a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z" />
               <path d="M8 8h8" />
               <path d="M8 12h5" />
             </svg>
