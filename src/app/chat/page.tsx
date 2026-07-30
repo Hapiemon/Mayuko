@@ -19,6 +19,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
@@ -164,6 +165,19 @@ export default function ChatPage() {
     }
   };
 
+  const deleteMessage = async (id: number) => {
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, sender: currentUser }),
+      });
+      if (!res.ok) return;
+      setDeleteTargetId(null);
+      await fetchMessages();
+    } catch {}
+  };
+
   const scrollToBottom = () => {
     if (!messagesRef.current) return;
     try {
@@ -235,13 +249,39 @@ export default function ChatPage() {
         {messages.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.sender === currentUser ? 'items-end' : 'items-start'}`}>
             <span className={`text-xs font-semibold mb-1 ${m.sender === currentUser ? 'text-right text-violet-500' : 'text-left text-gray-500'}`}>{m.sender}</span>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'bg-violet-600 text-white' : 'bg-white text-gray-800 border border-gray-200'}`}>
+            <div
+              role={m.sender === currentUser ? 'button' : undefined}
+              tabIndex={m.sender === currentUser ? 0 : -1}
+              onClick={() => {
+                if (m.sender === currentUser) {
+                  setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
+                }
+              }}
+              onKeyDown={(e) => {
+                if (m.sender === currentUser && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
+                }
+              }}
+              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'bg-violet-600 text-white cursor-pointer active:scale-[0.99]' : 'bg-white text-gray-800 border border-gray-200'}`}
+            >
               {m.content && <p className="whitespace-pre-wrap break-words text-sm">{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
                 <Image src={m.media_url} alt="image" width={280} height={280} className="rounded-xl max-w-full object-cover mt-1" unoptimized />
               )}
               {m.media_url && m.media_type === 'video' && (
                 <video src={m.media_url || undefined} controls className="rounded-xl max-w-full mt-1" style={{ maxWidth: 280 }} />
+              )}
+              {m.sender === currentUser && deleteTargetId === m.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteMessage(m.id);
+                  }}
+                  className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white hover:bg-white/25"
+                >
+                  削除
+                </button>
               )}
             </div>
             <span className="text-xs text-gray-400 mt-1">{new Date(m.created_at).toLocaleString('ja-JP')}</span>
