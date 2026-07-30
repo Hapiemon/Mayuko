@@ -26,9 +26,9 @@ export default function ChatPage() {
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
-  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'>('greeting');
+  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'>('greeting');
 
-  const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'; label: string }[] = [
+  const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
     { key: 'state', label: '状態' },
     { key: 'place', label: '場所' },
@@ -36,6 +36,8 @@ export default function ChatPage() {
     { key: 'body', label: '体' },
     { key: 'thing', label: '物' },
     { key: 'syntax', label: '構文' },
+    { key: 'date', label: '日付' },
+    { key: 'entertainment', label: 'エンタメ' },
   ];
 
   const CANNED_PHRASES: Record<string,string[]> = {
@@ -46,6 +48,8 @@ export default function ChatPage() {
     body: ['あたま','腕','手','おなか','腰','背中','足','目','耳','鼻','口'],
     thing: ['スマホ','食べ物','飲み物','書類'],
     syntax: ['お願いします','不要です','してます','どうかな？'],
+    date: ['きのう','今日','あした','平日','土日','8月','9月','10月','今年','来年'],
+    entertainment: ['ワンエン','EBiDAN','HAYATO','YouTube','動画','テレビ','TVer','アマプラ','SNS'],
   };
 
   // VAPID base64 → Uint8Array 変換ユーティリティ
