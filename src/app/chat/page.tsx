@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -300,8 +300,78 @@ export default function ChatPage() {
     };
   }, [messages]);
 
+  // グローバルなウィンドウエラーと未処理のrejectionを捕まえてサーバへ送る
+  useEffect(() => {
+    const onErr = (event: any) => {
+      try {
+        fetch('/api/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'error', message: event?.message || String(event) }),
+        });
+      } catch {}
+    };
+    const onRej = (ev: PromiseRejectionEvent) => {
+      try {
+        fetch('/api/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'unhandledrejection', reason: String(ev.reason) }),
+        });
+      } catch {}
+    };
+    window.addEventListener('error', onErr);
+    window.addEventListener('unhandledrejection', onRej as any);
+    return () => {
+      window.removeEventListener('error', onErr);
+      window.removeEventListener('unhandledrejection', onRej as any);
+    };
+  }, []);
+
+  // ErrorBoundary class to catch render/lifecycle errors and show fallback UI
+  class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, { hasError: boolean; error?: any }> {
+    constructor(props: any) {
+      super(props);
+      this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+      return { hasError: true };
+    }
+    componentDidCatch(error: any, info: any) {
+      // send to server for inspection
+      try {
+        fetch('/api/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: String(error), info }),
+        });
+      } catch {
+        // ignore
+      }
+      console.error('ErrorBoundary caught', error, info);
+    }
+    render() {
+      if (this.state.hasError) {
+        return (
+          <div className="flex flex-col h-dvh bg-white">
+            <header className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
+              <div>
+                <p className="font-bold text-lg leading-tight">エラーが発生しました</p>
+                <p className="text-violet-200 text-xs">MINE</p>
+              </div>
+              <div />
+            </header>
+            <div className="flex-1 flex items-center justify-center">問題が発生しました。リロードしてください。</div>
+          </div>
+        );
+      }
+      return this.props.children as any;
+    }
+  }
+
   return (
-    <div className="flex flex-col h-dvh bg-white">
+    <ErrorBoundary>
+      <div className="flex flex-col h-dvh bg-white">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
         <div>
@@ -494,6 +564,6 @@ export default function ChatPage() {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
+      </ErrorBoundary>
+    );
+  }
