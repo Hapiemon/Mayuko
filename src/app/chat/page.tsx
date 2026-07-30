@@ -254,7 +254,21 @@ export default function ChatPage() {
     }
   };
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    // SSR / CSR の不整合を避けるため、完全に null を返さず簡易ローディングUIを表示する
+    return (
+      <div className="flex flex-col h-dvh bg-white">
+        <header className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white">
+          <div>
+            <p className="font-bold text-lg leading-tight">読み込み中...</p>
+            <p className="text-violet-200 text-xs">MINE</p>
+          </div>
+          <div />
+        </header>
+        <div className="flex-1 flex items-center justify-center">読み込みしています…</div>
+      </div>
+    );
+  }
 
   const scrollToBottom = () => {
     const el = messagesContainerRef.current;
