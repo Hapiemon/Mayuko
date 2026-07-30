@@ -523,6 +523,5 @@ export default function ChatPage() {
           </button>
         </div>
       </div>
-      </ErrorBoundary>
     );
   }
