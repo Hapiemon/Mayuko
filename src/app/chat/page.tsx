@@ -442,7 +442,7 @@ export default function ChatPage() {
               <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className={`px-3 py-2 bg-white rounded-lg text-sm ${userTheme.cannedTextColor} ${userTheme.cannedHover}`}>{p}</button>
             ))}
           </div>
-          <div className="flex items-center gap-1">
+          <div className={`border-t ${userTheme.cannedBorder} pt-3 flex items-center gap-1`}>
             <div className="flex gap-1 overflow-x-auto flex-nowrap flex-1 min-w-0 pb-1">
               {TABS.map((t) => (
                 <button
