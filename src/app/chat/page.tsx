@@ -14,6 +14,8 @@ interface Message {
   mayuko_read_status?: 'まゆこ未読' | 'まゆこ既読';
 }
 
+type MessageFontSize = 'small' | 'medium' | 'large';
+
 export default function ChatPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<string>('');
@@ -27,6 +29,7 @@ export default function ChatPage() {
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
+  const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'>('greeting');
 
   const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'; label: string }[] = [
@@ -101,6 +104,13 @@ export default function ChatPage() {
     }).catch(() => {});
   };
 
+  const fontSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-base'
+        : 'text-sm';
+
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
     if (!user) {
@@ -118,6 +128,21 @@ export default function ChatPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const saved = localStorage.getItem(`messageFontSize:${currentUser}`) as MessageFontSize | null;
+    if (saved === 'small' || saved === 'medium' || saved === 'large') {
+      setMessageFontSize(saved);
+    } else {
+      setMessageFontSize('medium');
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    localStorage.setItem(`messageFontSize:${currentUser}`, messageFontSize);
+  }, [currentUser, messageFontSize]);
 
   const fetchMessages = async () => {
     try {
@@ -258,6 +283,19 @@ export default function ChatPage() {
           <p className="text-violet-200 text-xs">MINE</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-violet-700 rounded-full px-2 py-1">
+            <span className="text-[10px] text-violet-200">文字</span>
+            <select
+              value={messageFontSize}
+              onChange={(e) => setMessageFontSize(e.target.value as MessageFontSize)}
+              aria-label="メッセージ文字サイズ"
+              className="bg-transparent text-white text-xs focus:outline-none"
+            >
+              <option value="small" className="text-gray-900">小</option>
+              <option value="medium" className="text-gray-900">中</option>
+              <option value="large" className="text-gray-900">大</option>
+            </select>
+          </div>
           {pushPermission !== 'granted' && pushPermission !== 'denied' && (
             <button
               onClick={() => requestNotificationPermission(currentUser)}
@@ -319,7 +357,7 @@ export default function ChatPage() {
               }}
               className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? 'bg-violet-600 text-white cursor-pointer active:scale-[0.99]' : 'bg-white text-gray-800 border border-gray-200'}`}
             >
-              {m.content && <p className="whitespace-pre-wrap break-words text-sm">{m.content}</p>}
+              {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
                 <Image src={m.media_url} alt="image" width={280} height={280} className="rounded-xl max-w-full object-cover mt-1" unoptimized />
               )}
