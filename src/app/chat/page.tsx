@@ -429,7 +429,7 @@ export default function ChatPage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-3 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full">✕</button>
+            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-3 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full">閉じる</button>
           </div>
         </div>
 
