@@ -164,22 +164,36 @@ export default function ChatPage() {
     messageFontSize === 'small'
       ? 'text-xs'
       : messageFontSize === 'large'
-        ? 'text-lg'
+        ? 'text-3xl'
         : 'text-sm';
 
   const cannedFontSizeClass =
     messageFontSize === 'small'
       ? 'text-xs'
       : messageFontSize === 'large'
-        ? 'text-base'
+        ? 'text-2xl'
         : 'text-sm';
 
   const cannedButtonSizeClass =
     messageFontSize === 'small'
       ? 'px-2 py-1.5 text-xs'
       : messageFontSize === 'large'
-        ? 'px-3 py-2 text-sm'
+        ? 'px-5 py-3 text-2xl'
         : 'px-3 py-2 text-sm';
+
+  const cannedGridClass =
+    messageFontSize === 'large'
+      ? 'grid-cols-2 gap-3'
+      : messageFontSize === 'small'
+        ? 'grid-cols-3 gap-1.5'
+        : 'grid-cols-3 gap-2';
+
+  const cannedTabsWrapClass =
+    messageFontSize === 'large'
+      ? 'gap-2 pb-2'
+      : messageFontSize === 'small'
+        ? 'gap-1 pb-1'
+        : 'gap-1 pb-1';
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -500,13 +514,13 @@ export default function ChatPage() {
       <div className={`border-t ${userTheme.footerBorder} ${userTheme.footerBg} px-4 py-3 relative`}>
         {/* canned phrases overlay */}
         <div className={`absolute left-4 right-4 bottom-full mb-3 ${userTheme.cannedWindowBg} border ${userTheme.cannedBorder} rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className={`grid ${cannedGridClass} mb-3`}>
             {CANNED_PHRASES[activeCannedTab].map((p) => (
               <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className={`px-3 py-2 bg-white rounded-lg ${cannedFontSizeClass} ${userTheme.cannedTextColor} ${userTheme.cannedHover}`}>{p}</button>
             ))}
           </div>
           <div className={`border-t ${userTheme.cannedBorder} pt-3 flex items-center gap-1`}>
-            <div className="flex gap-1 overflow-x-auto flex-nowrap flex-1 min-w-0 pb-1">
+            <div className={`flex overflow-x-auto flex-nowrap flex-1 min-w-0 ${cannedTabsWrapClass}`}>
               {TABS.map((t) => (
                 <button
                   key={t.key}
