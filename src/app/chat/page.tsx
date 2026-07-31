@@ -491,7 +491,7 @@ export default function ChatPage() {
               )}
               {m.reply_to_id && (
                 <div className="mb-2 rounded-lg border-l-2 border-gray-300 bg-white/70 px-2 py-1">
-                  <p className="text-[11px] font-semibold text-gray-600">返信先： {m.reply_to_sender}</p>
+                  <p className="text-[11px] font-semibold text-gray-600">{m.reply_to_sender}</p>
                   <p className="text-[11px] text-gray-600 break-words">{m.reply_to_content}</p>
                 </div>
               )}
