@@ -428,7 +428,7 @@ export default function ChatPage() {
             >
               {m.sender === currentUser ? (
                 <div
-                  className={`pointer-events-none absolute -right-1.5 bottom-3 h-3 w-3 rotate-45 ${getBubbleTailBgClass(currentUser)} border-r-2 border-b-2 ${getBubbleTailBorderClass(currentUser)}`}
+                  className={`pointer-events-none absolute -right-1.5 bottom-3 h-3 w-3 -rotate-45 ${getBubbleTailBgClass(currentUser)} border-r-2 border-b-2 ${getBubbleTailBorderClass(currentUser)}`}
                 />
               ) : (
                 <div
