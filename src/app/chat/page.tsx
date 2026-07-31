@@ -222,6 +222,7 @@ export default function ChatPage() {
       setInputText('');
       notifyPush('MINE', `${currentUser}: ${text}`, currentUser);
       await fetchMessages();
+      requestAnimationFrame(() => scrollToBottom());
     } catch {}
   };
 
@@ -236,6 +237,7 @@ export default function ChatPage() {
       await fetch('/api/upload', { method: 'POST', body: fd });
       notifyPush('MINE', `${currentUser}がファイルを送信しました`, currentUser);
       await fetchMessages();
+      requestAnimationFrame(() => scrollToBottom());
     } catch (e) {
       // ignore
     } finally {
