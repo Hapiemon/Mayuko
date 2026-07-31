@@ -30,9 +30,9 @@ export default function ChatPage() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
-  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'>('greeting');
+  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'date'|'place'|'people'|'state'|'body'|'thing'|'syntax'|'entertainment'>('greeting');
 
-  const TABS: { key: 'greeting'|'state'|'place'|'people'|'body'|'thing'|'syntax'|'date'|'entertainment'; label: string }[] = [
+  const TABS: { key: 'greeting'|'date'|'place'|'people'|'state'|'body'|'thing'|'syntax'|'entertainment'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
     { key: 'state', label: '状態' },
     { key: 'place', label: '場所' },
