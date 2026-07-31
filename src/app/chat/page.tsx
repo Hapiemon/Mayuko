@@ -30,27 +30,29 @@ export default function ChatPage() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
-  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'date'|'place'|'people'|'state'|'body'|'thing'|'syntax'|'entertainment'>('greeting');
+  const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'>('greeting');
 
-  const TABS: { key: 'greeting'|'date'|'place'|'people'|'state'|'body'|'thing'|'syntax'|'entertainment'; label: string }[] = [
+  const TABS: { key: 'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
-    { key: 'date', label: '日付' },
-    { key: 'place', label: '場所' },
-    { key: 'people', label: '人名' },
     { key: 'state', label: '状態' },
-    { key: 'body', label: '体' },
+    { key: 'emotion', label: '感情' },
+    { key: 'people', label: '人名' },
     { key: 'thing', label: '物' },
     { key: 'syntax', label: '構文' },
     { key: 'entertainment', label: 'エンタメ' },
+    { key: 'date', label: '日付' },
+    { key: 'place', label: '場所' },
+    { key: 'body', label: '体' },
   ];
 
   const CANNED_PHRASES: Record<string,string[]> = {
     greeting: ['おはよう','おやすみ','ありがとう','よろしく','お願いします','OK'],
-    state: ['◯','良い','暑い','×','悪い','寒い','大丈夫','楽しい','嬉しい','苦しい','悲しい','痛い'],
+    state: ['◯','良い','暑い','×','悪い','寒い','大丈夫','痛い','少し','普通','結構'],
+    emotion: ['楽しい','嬉しい','苦しい','悲しい'],
     place: ['健軍アパート','くもん','病院','おじいちゃん家','市役所','空港','熊本','東京'],
     people: ['ママ','おじいちゃん','だいや','るちえ','あつと','せれな','なっちゃん','ひで兄ちゃん','北海道のおばあちゃん'],
     body: ['あたま','腕','手','おなか','腰','背中','足','目','耳','鼻','口'],
-    thing: ['スマホ','食べ物','飲み物','書類','車','LINE','写真','財布','マイナンバー'],
+    thing: ['スマホ','食べ物','飲み物','書類','車','LINE','鍵','財布','マイナンバー'],
     syntax: ['お願いします','不要です','してます','どうかな？'],
     date: ['きのう','今日','あした','平日','土日','8月','9月','10月','今年','来年'],
     entertainment: ['ワンエン','EBiDAN','HAYATO','YouTube','動画','テレビ','TVer','アマプラ','SNS','VIVANT'],
