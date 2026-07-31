@@ -529,9 +529,9 @@ export default function ChatPage() {
               strokeLinejoin="round"
               className="text-gray-700"
             >
-              <path d="M21 15a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z" />
-              <path d="M8 8h8" />
-              <path d="M8 12h5" />
+              <path d="M7 7h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H10l-4 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+              <path d="M8 10h8" />
+              <path d="M8 13h5" />
             </svg>
           </button>
           <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
