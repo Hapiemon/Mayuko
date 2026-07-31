@@ -335,6 +335,17 @@ export default function ChatPage() {
     }
   }, [inputText]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    const el = messagesRef.current;
+    if (!el) return;
+    const timer = window.setTimeout(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+      checkScrollBottom();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [currentUser, messages]);
+
   if (!currentUser) {
     return null;
   }
