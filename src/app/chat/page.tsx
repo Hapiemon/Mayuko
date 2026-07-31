@@ -26,6 +26,7 @@ export default function ChatPage() {
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const shouldScrollOnLoginRef = useRef(false);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
@@ -202,6 +203,7 @@ export default function ChatPage() {
       return;
     }
     setCurrentUser(user);
+    shouldScrollOnLoginRef.current = true;
     // 既に許可済みならサイレント登録
     if ('Notification' in window) {
       const perm = Notification.permission;
@@ -344,6 +346,12 @@ export default function ChatPage() {
   useEffect(() => {
     const el = messagesRef.current;
     if (!el) return;
+    if (shouldScrollOnLoginRef.current) {
+      shouldScrollOnLoginRef.current = false;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+      checkScrollBottom();
+      return;
+    }
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (distFromBottom <= 60) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
@@ -360,17 +368,6 @@ export default function ChatPage() {
       el.style.height = Math.min(el.scrollHeight, 440) + 'px';
     }
   }, [inputText]);
-
-  useEffect(() => {
-    if (!currentUser) return;
-    const el = messagesRef.current;
-    if (!el) return;
-    const timer = window.setTimeout(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
-      checkScrollBottom();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [currentUser]);
 
   if (!currentUser) {
     return null;
