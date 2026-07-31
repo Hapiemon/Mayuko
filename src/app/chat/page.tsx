@@ -60,7 +60,7 @@ export default function ChatPage() {
   };
 
   const USER_BUBBLE_CLASSES: Record<string, string> = {
-    まゆこ: 'border-pink-400 bg-pink-50 text-gray-900',
+    まゆこ: 'border-red-400 bg-red-50 text-gray-900',
     だいや: 'border-blue-400 bg-blue-50 text-gray-900',
     あつと: 'border-green-400 bg-green-50 text-gray-900',
     せれな: 'border-purple-400 bg-purple-50 text-gray-900',
@@ -70,7 +70,7 @@ export default function ChatPage() {
   const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-violet-50 text-gray-900';
 
   const USER_BUBBLE_TAIL_BG_CLASSES: Record<string, string> = {
-    まゆこ: 'bg-pink-50',
+    まゆこ: 'bg-red-50',
     だいや: 'bg-blue-50',
     あつと: 'bg-green-50',
     せれな: 'bg-purple-50',
@@ -78,7 +78,7 @@ export default function ChatPage() {
   };
 
   const USER_BUBBLE_TAIL_BORDER_CLASSES: Record<string, string> = {
-    まゆこ: 'border-pink-400',
+    まゆこ: 'border-red-400',
     だいや: 'border-blue-400',
     あつと: 'border-green-400',
     せれな: 'border-purple-400',
@@ -89,7 +89,7 @@ export default function ChatPage() {
   const getBubbleTailBorderClass = (sender: string) => USER_BUBBLE_TAIL_BORDER_CLASSES[sender] ?? 'border-violet-600';
 
   const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string; cannedWindowBg: string; cannedTextColor: string; cannedHover: string; cannedBorder: string }> = {
-    まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700', cannedWindowBg: 'bg-pink-100', cannedTextColor: 'text-pink-700', cannedHover: 'hover:bg-pink-200', cannedBorder: 'border-pink-300' },
+    まゆこ: { headerBg: 'bg-red-400', headerSubText: 'text-red-100', footerBg: 'bg-red-50', footerBorder: 'border-red-200', buttonBg: 'bg-red-500', buttonHover: 'hover:bg-red-600', buttonBgLight: 'bg-red-100', buttonHoverLight: 'hover:bg-red-200', buttonDarkerBg: 'bg-red-600', buttonDarkerHover: 'hover:bg-red-700', cannedWindowBg: 'bg-red-100', cannedTextColor: 'text-red-700', cannedHover: 'hover:bg-red-200', cannedBorder: 'border-red-300' },
     だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200', buttonBg: 'bg-blue-500', buttonHover: 'hover:bg-blue-600', buttonBgLight: 'bg-blue-100', buttonHoverLight: 'hover:bg-blue-200', buttonDarkerBg: 'bg-blue-600', buttonDarkerHover: 'hover:bg-blue-700', cannedWindowBg: 'bg-blue-100', cannedTextColor: 'text-blue-700', cannedHover: 'hover:bg-blue-200', cannedBorder: 'border-blue-300' },
     あつと: { headerBg: 'bg-green-400', headerSubText: 'text-green-100', footerBg: 'bg-green-50', footerBorder: 'border-green-200', buttonBg: 'bg-green-500', buttonHover: 'hover:bg-green-600', buttonBgLight: 'bg-green-100', buttonHoverLight: 'hover:bg-green-200', buttonDarkerBg: 'bg-green-600', buttonDarkerHover: 'hover:bg-green-700', cannedWindowBg: 'bg-green-100', cannedTextColor: 'text-green-700', cannedHover: 'hover:bg-green-200', cannedBorder: 'border-green-300' },
     せれな: { headerBg: 'bg-purple-400', headerSubText: 'text-purple-100', footerBg: 'bg-purple-50', footerBorder: 'border-purple-200', buttonBg: 'bg-purple-500', buttonHover: 'hover:bg-purple-600', buttonBgLight: 'bg-purple-100', buttonHoverLight: 'hover:bg-purple-200', buttonDarkerBg: 'bg-purple-600', buttonDarkerHover: 'hover:bg-purple-700', cannedWindowBg: 'bg-purple-100', cannedTextColor: 'text-purple-700', cannedHover: 'hover:bg-purple-200', cannedBorder: 'border-purple-300' },

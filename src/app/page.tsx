@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 const USERS = [
-  { name: 'まゆこ', color: 'bg-pink-400' },
+  { name: 'まゆこ', color: 'bg-red-400' },
   { name: 'だいや', color: 'bg-blue-400' },
   { name: 'あつと', color: 'bg-green-400' },
   { name: 'せれな', color: 'bg-purple-400' },
