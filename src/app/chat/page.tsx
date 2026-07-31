@@ -35,12 +35,13 @@ export default function ChatPage() {
   const TABS: { key: 'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
     { key: 'state', label: '状態' },
+    { key: 'body', label: '体' },
+    { key: 'date', label: '日付' },
     { key: 'emotion', label: '感情' },
     { key: 'people', label: '人名' },
     { key: 'thing', label: '物' },
     { key: 'syntax', label: '構文' },
     { key: 'entertainment', label: 'エンタメ' },
-    { key: 'date', label: '日付' },
     { key: 'place', label: '場所' },
   ];
 
