@@ -291,8 +291,14 @@ export default function ChatPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // メッセージ更新時にも位置チェック
+  // メッセージ更新時にも位置チェック＆最下部なら自動スクロール
   useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distFromBottom <= 60) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
     checkScrollBottom();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
