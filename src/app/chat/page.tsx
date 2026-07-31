@@ -520,19 +520,17 @@ export default function ChatPage() {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.6"
               strokeLinecap="round"
               strokeLinejoin="round"
               className="text-gray-700"
             >
               <path d="M7 7h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H10l-4 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
-              <path d="M8 10h8" />
-              <path d="M8 13h5" />
             </svg>
           </button>
           <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
