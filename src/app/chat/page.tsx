@@ -167,6 +167,20 @@ export default function ChatPage() {
         ? 'text-lg'
         : 'text-sm';
 
+  const cannedFontSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-base'
+        : 'text-sm';
+
+  const cannedButtonSizeClass =
+    messageFontSize === 'small'
+      ? 'px-2 py-1.5 text-xs'
+      : messageFontSize === 'large'
+        ? 'px-3 py-2 text-sm'
+        : 'px-3 py-2 text-sm';
+
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
     if (!user) {
@@ -488,7 +502,7 @@ export default function ChatPage() {
         <div className={`absolute left-4 right-4 bottom-full mb-3 ${userTheme.cannedWindowBg} border ${userTheme.cannedBorder} rounded-xl shadow-lg p-3 transition-all duration-150 z-20 ${cannedOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {CANNED_PHRASES[activeCannedTab].map((p) => (
-              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className={`px-3 py-2 bg-white rounded-lg text-sm ${userTheme.cannedTextColor} ${userTheme.cannedHover}`}>{p}</button>
+              <button key={p} onClick={() => { setInputText((prev)=> (prev && !prev.endsWith(' ') ? prev+' '+p : prev+p)); }} className={`px-3 py-2 bg-white rounded-lg ${cannedFontSizeClass} ${userTheme.cannedTextColor} ${userTheme.cannedHover}`}>{p}</button>
             ))}
           </div>
           <div className={`border-t ${userTheme.cannedBorder} pt-3 flex items-center gap-1`}>
@@ -497,13 +511,13 @@ export default function ChatPage() {
                 <button
                   key={t.key}
                   onClick={() => setActiveCannedTab(t.key)}
-                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? `${userTheme.buttonBg} text-white` : `bg-white ${userTheme.cannedTextColor}`}`}
+                  className={`flex-shrink-0 rounded-full text-sm font-medium transition-colors ${activeCannedTab === t.key ? `${userTheme.buttonBg} text-white` : `bg-white ${userTheme.cannedTextColor}`} ${cannedButtonSizeClass}`}
                 >
                   {t.label}
                 </button>
               ))}
             </div>
-            <button onClick={() => setCannedOpen(false)} className="flex-shrink-0 ml-1 px-3 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full">閉じる</button>
+            <button onClick={() => setCannedOpen(false)} className={`flex-shrink-0 ml-1 rounded-full text-xs font-semibold text-white bg-red-500 hover:bg-red-600 ${cannedButtonSizeClass}`}>閉じる</button>
           </div>
         </div>
 
