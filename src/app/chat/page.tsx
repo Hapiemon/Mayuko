@@ -38,12 +38,12 @@ export default function ChatPage() {
     { key: 'state', label: '状態' },
     { key: 'body', label: '体' },
     { key: 'date', label: '日付' },
+    { key: 'place', label: '場所' },
     { key: 'emotion', label: '感情' },
     { key: 'people', label: '人名' },
     { key: 'thing', label: '物' },
     { key: 'syntax', label: '構文' },
     { key: 'entertainment', label: 'エンタメ' },
-    { key: 'place', label: '場所' },
   ];
 
   const CANNED_PHRASES: Record<string,string[]> = {
