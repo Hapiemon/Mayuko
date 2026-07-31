@@ -13,10 +13,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'MINE', body: event.data ? event.data.text() : '' };
+    data = { title: '', body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'MINE';
+  const title = data.title || '';
   const options = {
     body: data.body || '',
     icon: '/icon.png',

@@ -271,7 +271,7 @@ export default function ChatPage() {
         body: JSON.stringify({ sender: currentUser, content: text }),
       });
       setInputText('');
-      notifyPush('MINE', `${currentUser}: ${text}`, currentUser);
+      notifyPush(currentUser, `${text}`, currentUser);
       await fetchMessages();
     } catch {}
   };
@@ -285,7 +285,7 @@ export default function ChatPage() {
       fd.append('sender', currentUser);
       fd.append('media_type', file.type.startsWith('image/') ? 'image' : 'video');
       await fetch('/api/upload', { method: 'POST', body: fd });
-      notifyPush('MINE', `${currentUser}がファイルを送信しました`, currentUser);
+      notifyPush(currentUser, `${currentUser}がファイルを送信しました`, currentUser);
       await fetchMessages();
     } catch (e) {
       // ignore
