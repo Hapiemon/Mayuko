@@ -9,6 +9,18 @@ async function ensureSchema() {
     ALTER TABLE messages
     ADD COLUMN IF NOT EXISTS mayuko_read_at TIMESTAMPTZ
   `;
+  await sql`
+    ALTER TABLE messages
+    ADD COLUMN IF NOT EXISTS reply_to_id INTEGER
+  `;
+  await sql`
+    ALTER TABLE messages
+    ADD COLUMN IF NOT EXISTS reply_to_sender TEXT
+  `;
+  await sql`
+    ALTER TABLE messages
+    ADD COLUMN IF NOT EXISTS reply_to_content TEXT
+  `;
 }
 
 // GET /api/messages — 全メッセージ取得
@@ -18,6 +30,7 @@ export async function GET() {
     const sql = getSql();
     const rows = await sql`
       SELECT id, sender, content, media_url, media_type, created_at,
+        reply_to_id, reply_to_sender, reply_to_content,
         CASE
           WHEN sender = 'まゆこ' THEN 'まゆこ既読'
           WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
@@ -39,13 +52,19 @@ export async function POST(req: NextRequest) {
   try {
     await ensureSchema();
     const sql = getSql();
-    const { sender, content } = await req.json();
+    const { sender, content, replyToId, replyToSender, replyToContent } = await req.json();
     if (!sender || !content?.trim()) {
       return NextResponse.json({ error: 'sender and content are required' }, { status: 400 });
     }
     await sql`
-      INSERT INTO messages (sender, content)
-      VALUES (${sender}, ${content.trim()})
+      INSERT INTO messages (sender, content, reply_to_id, reply_to_sender, reply_to_content)
+      VALUES (
+        ${sender},
+        ${content.trim()},
+        ${replyToId ?? null},
+        ${replyToSender ?? null},
+        ${replyToContent ?? null}
+      )
     `;
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {

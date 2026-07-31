@@ -10,6 +10,10 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const sender = formData.get('sender') as string | null;
     const media_type = formData.get('media_type') as 'image' | 'video' | null;
+    const replyToIdRaw = formData.get('replyToId') as string | null;
+    const replyToSender = formData.get('replyToSender') as string | null;
+    const replyToContent = formData.get('replyToContent') as string | null;
+    const replyToId = replyToIdRaw ? Number(replyToIdRaw) : null;
 
     if (!file || !sender || !media_type) {
       return NextResponse.json({ error: 'file, sender, media_type are required' }, { status: 400 });
@@ -33,8 +37,15 @@ export async function POST(req: NextRequest) {
 
     // DB にメッセージレコードを保存
     await sql`
-      INSERT INTO messages (sender, media_url, media_type)
-      VALUES (${sender}, ${blob.url}, ${media_type})
+      INSERT INTO messages (sender, media_url, media_type, reply_to_id, reply_to_sender, reply_to_content)
+      VALUES (
+        ${sender},
+        ${blob.url},
+        ${media_type},
+        ${replyToId},
+        ${replyToSender ?? null},
+        ${replyToContent ?? null}
+      )
     `;
 
     return NextResponse.json({ url: blob.url }, { status: 201 });

@@ -10,6 +10,9 @@ interface Message {
   content: string | null;
   media_url: string | null;
   media_type: 'image' | 'video' | null;
+  reply_to_id?: number | null;
+  reply_to_sender?: string | null;
+  reply_to_content?: string | null;
   created_at: string;
   mayuko_read_status?: 'まゆこ未読' | 'まゆこ既読';
 }
@@ -22,7 +25,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{ id: number; sender: string; content: string } | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -268,9 +272,17 @@ export default function ChatPage() {
       await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: currentUser, content: text }),
+        body: JSON.stringify({
+          sender: currentUser,
+          content: text,
+          replyToId: replyTarget?.id ?? null,
+          replyToSender: replyTarget?.sender ?? null,
+          replyToContent: replyTarget?.content ?? null,
+        }),
       });
       setInputText('');
+      setReplyTarget(null);
+      setActiveMessageId(null);
       notifyPush(currentUser, `${text}`, currentUser);
       await fetchMessages();
     } catch {}
@@ -284,7 +296,14 @@ export default function ChatPage() {
       fd.append('file', file);
       fd.append('sender', currentUser);
       fd.append('media_type', file.type.startsWith('image/') ? 'image' : 'video');
+      if (replyTarget) {
+        fd.append('replyToId', String(replyTarget.id));
+        fd.append('replyToSender', replyTarget.sender);
+        fd.append('replyToContent', replyTarget.content);
+      }
       await fetch('/api/upload', { method: 'POST', body: fd });
+      setReplyTarget(null);
+      setActiveMessageId(null);
       notifyPush(currentUser, `${currentUser}がファイルを送信しました`, currentUser);
       await fetchMessages();
     } catch (e) {
@@ -313,7 +332,10 @@ export default function ChatPage() {
         body: JSON.stringify({ id, sender: currentUser }),
       });
       if (!res.ok) return;
-      setDeleteTargetId(null);
+      setActiveMessageId(null);
+      if (replyTarget?.id === id) {
+        setReplyTarget(null);
+      }
       await fetchMessages();
     } catch {}
   };
@@ -445,20 +467,18 @@ export default function ChatPage() {
           <div key={m.id} className={`flex flex-col ${m.sender === currentUser ? 'items-end' : 'items-start'}`}>
             <span className={`text-xs font-semibold mb-1 ${m.sender === currentUser ? 'text-right text-violet-500' : 'text-left text-gray-500'}`}>{m.sender}</span>
             <div
-              role={m.sender === currentUser ? 'button' : undefined}
-              tabIndex={m.sender === currentUser ? 0 : -1}
+              role="button"
+              tabIndex={0}
               onClick={() => {
-                if (m.sender === currentUser) {
-                  setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
-                }
+                setActiveMessageId((prev) => (prev === m.id ? null : m.id));
               }}
               onKeyDown={(e) => {
-                if (m.sender === currentUser && (e.key === 'Enter' || e.key === ' ')) {
+                if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
+                  setActiveMessageId((prev) => (prev === m.id ? null : m.id));
                 }
               }}
-              className={`relative max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2`}`}
+              className={`relative max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
             >
               {m.sender === currentUser ? (
                 <div
@@ -469,6 +489,12 @@ export default function ChatPage() {
                   className={`pointer-events-none absolute -left-1.5 bottom-3 h-3 w-3 rotate-45 ${getBubbleTailBgClass(m.sender)} border-l-2 border-b-2 ${getBubbleTailBorderClass(m.sender)}`}
                 />
               )}
+              {m.reply_to_id && (
+                <div className="mb-2 rounded-lg border-l-2 border-gray-300 bg-white/70 px-2 py-1">
+                  <p className="text-[11px] font-semibold text-gray-600">↪ {m.reply_to_sender}</p>
+                  <p className="text-[11px] text-gray-600 break-words">{m.reply_to_content}</p>
+                </div>
+              )}
               {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
                 <Image src={m.media_url} alt="image" width={280} height={280} className="rounded-xl max-w-full object-cover mt-1" unoptimized />
@@ -476,16 +502,34 @@ export default function ChatPage() {
               {m.media_url && m.media_type === 'video' && (
                 <video src={m.media_url || undefined} controls className="rounded-xl max-w-full mt-1" style={{ maxWidth: 280 }} />
               )}
-              {m.sender === currentUser && deleteTargetId === m.id && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteMessage(m.id);
-                  }}
-                  className="mt-2 inline-flex items-center gap-1 rounded-full border border-red-400 bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-600"
-                >
-                  削除
-                </button>
+              {activeMessageId === m.id && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (replyTarget?.id === m.id) {
+                        setReplyTarget(null);
+                      } else {
+                        const preview = m.content?.trim() || (m.media_type === 'image' ? '[画像]' : m.media_type === 'video' ? '[動画]' : '(本文なし)');
+                        setReplyTarget({ id: m.id, sender: m.sender, content: preview });
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white ${replyTarget?.id === m.id ? 'bg-gray-500 hover:bg-gray-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`}`}
+                  >
+                    {replyTarget?.id === m.id ? 'リプ解除' : 'リプ'}
+                  </button>
+                  {m.sender === currentUser && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteMessage(m.id);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full border border-red-400 bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-600"
+                    >
+                      削除
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             <div className="mt-1 flex items-center gap-2 text-gray-400">
@@ -531,6 +575,23 @@ export default function ChatPage() {
         </div>
 
         {uploading && <p className="text-center text-sm text-violet-500 mb-2">アップロード中...</p>}
+
+        {replyTarget && (
+          <div className={`mb-2 rounded-lg border ${userTheme.cannedBorder} bg-white/80 px-3 py-2`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-600">返信先: {replyTarget.sender}</p>
+                <p className="text-xs text-gray-600 break-words">{replyTarget.content}</p>
+              </div>
+              <button
+                onClick={() => setReplyTarget(null)}
+                className="shrink-0 rounded-full bg-gray-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-600"
+              >
+                解除
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mb-3">
           <textarea
