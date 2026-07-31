@@ -68,6 +68,25 @@ export default function ChatPage() {
 
   const getBubbleClass = (sender: string) => USER_BUBBLE_CLASSES[sender] ?? 'border-violet-600 bg-violet-50 text-gray-900';
 
+  const USER_BUBBLE_TAIL_BG_CLASSES: Record<string, string> = {
+    まゆこ: 'bg-pink-50',
+    だいや: 'bg-blue-50',
+    あつと: 'bg-green-50',
+    せれな: 'bg-purple-50',
+    るちえ: 'bg-amber-50',
+  };
+
+  const USER_BUBBLE_TAIL_BORDER_CLASSES: Record<string, string> = {
+    まゆこ: 'border-pink-400',
+    だいや: 'border-blue-400',
+    あつと: 'border-green-400',
+    せれな: 'border-purple-400',
+    るちえ: 'border-amber-400',
+  };
+
+  const getBubbleTailBgClass = (sender: string) => USER_BUBBLE_TAIL_BG_CLASSES[sender] ?? 'bg-violet-50';
+  const getBubbleTailBorderClass = (sender: string) => USER_BUBBLE_TAIL_BORDER_CLASSES[sender] ?? 'border-violet-600';
+
   const USER_THEME_CLASSES: Record<string, { headerBg: string; headerSubText: string; footerBg: string; footerBorder: string; buttonBg: string; buttonHover: string; buttonBgLight: string; buttonHoverLight: string; buttonDarkerBg: string; buttonDarkerHover: string; cannedWindowBg: string; cannedTextColor: string; cannedHover: string; cannedBorder: string }> = {
     まゆこ: { headerBg: 'bg-pink-400', headerSubText: 'text-pink-100', footerBg: 'bg-pink-50', footerBorder: 'border-pink-200', buttonBg: 'bg-pink-500', buttonHover: 'hover:bg-pink-600', buttonBgLight: 'bg-pink-100', buttonHoverLight: 'hover:bg-pink-200', buttonDarkerBg: 'bg-pink-600', buttonDarkerHover: 'hover:bg-pink-700', cannedWindowBg: 'bg-pink-100', cannedTextColor: 'text-pink-700', cannedHover: 'hover:bg-pink-200', cannedBorder: 'border-pink-300' },
     だいや: { headerBg: 'bg-blue-400', headerSubText: 'text-blue-100', footerBg: 'bg-blue-50', footerBorder: 'border-blue-200', buttonBg: 'bg-blue-500', buttonHover: 'hover:bg-blue-600', buttonBgLight: 'bg-blue-100', buttonHoverLight: 'hover:bg-blue-200', buttonDarkerBg: 'bg-blue-600', buttonDarkerHover: 'hover:bg-blue-700', cannedWindowBg: 'bg-blue-100', cannedTextColor: 'text-blue-700', cannedHover: 'hover:bg-blue-200', cannedBorder: 'border-blue-300' },
@@ -405,8 +424,17 @@ export default function ChatPage() {
                   setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
                 }
               }}
-              className={`max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
+              className={`relative max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
             >
+              {m.sender === currentUser ? (
+                <div
+                  className={`pointer-events-none absolute -right-1.5 bottom-3 h-3 w-3 rotate-45 ${getBubbleTailBgClass(currentUser)} border-r-2 border-b-2 ${getBubbleTailBorderClass(currentUser)}`}
+                />
+              ) : (
+                <div
+                  className={`pointer-events-none absolute -left-1.5 bottom-3 h-3 w-3 rotate-45 ${getBubbleTailBgClass(m.sender)} border-l-2 border-b-2 ${getBubbleTailBorderClass(m.sender)}`}
+                />
+              )}
               {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
                 <Image src={m.media_url} alt="image" width={280} height={280} className="rounded-xl max-w-full object-cover mt-1" unoptimized />
