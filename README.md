@@ -1,22 +1,33 @@
 # Mayuko Chat
 
-まゆこ・だいや・あつと・せれな のためのチャットアプリ。
+まゆこ・だいや・あつと・せれな・るちえ のためのチャットアプリ。
 
 ## 技術スタック
 
-- **フロントエンド / API**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- **フロントエンド / API**: Next.js (App Router) + TypeScript + Tailwind CSS
 - **データベース**: Neon (PostgreSQL)
 - **ファイルストレージ**: Vercel Blob
+- **プッシュ通知**: Web Push API / Service Worker
 - **デプロイ**: Vercel
 
 ## 機能
 
-- ユーザー選択ログイン（まゆこ / だいや / あつと / せれな）
+- ユーザー選択ログイン（まゆこ / だいや / あつと / せれな / るちえ）
 - テキストチャット
 - 画像送信
 - 動画送信
+- メッセージ削除（自分のメッセージのみ）
+- 既読 / 未読管理（まゆこ向け）
+- メッセージ文字サイズ変更（小 / 中 / 大）
+- 定型文フロートウィンドウ
+- ユーザーごとの色テーマ
 - チャット吹き出しの上に送信者名を表示
+- プッシュ通知送信
+- 通知許可 / 購読登録
 - 3秒ごとの自動ポーリング
+- ログイン時の最下部スクロール
+- 最下部到達時の自動スクロール維持
+- 設定ページ（/settings）
 
 ---
 
@@ -89,14 +100,27 @@ npm run dev
 src/
 ├── app/
 │   ├── api/
-│   │   ├── init/route.ts      # DB初期化エンドポイント
-│   │   ├── messages/route.ts  # メッセージCRUD
-│   │   └── upload/route.ts    # 画像・動画アップロード
-│   ├── chat/page.tsx          # チャット画面
+│   │   ├── clear-mayuko-read/route.ts # まゆこ未読リセット
+│   │   ├── init/route.ts              # DB初期化エンドポイント
+│   │   ├── log/route.ts               # ログ記録
+│   │   ├── messages/route.ts          # メッセージCRUD
+│   │   ├── notify/route.ts            # プッシュ通知送信
+│   │   ├── subscribe/route.ts         # 通知購読登録
+│   │   └── upload/route.ts            # 画像・動画アップロード
+│   ├── chat/page.tsx                  # チャット画面
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx               # ユーザー選択画面
+│   ├── page.tsx                       # ユーザー選択画面
+│   └── settings/page.tsx              # 管理ページ
 └── lib/
-    ├── db.ts                  # Neon DB クライアント
-    └── schema.sql             # テーブル定義参照用
+    ├── db.ts                          # Neon DB クライアント
+    └── schema.sql                     # テーブル定義参照用
 ```
+
+---
+
+## 補足
+
+- まゆこの既読管理は `mayuko_read_at` を使って保存しています。
+- 通知は Service Worker 経由で配信されます。
+- ログイン後のチャット画面は、初回表示時と最下部到達時の更新で自動スクロールします。
