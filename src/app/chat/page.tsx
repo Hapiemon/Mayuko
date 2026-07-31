@@ -42,7 +42,6 @@ export default function ChatPage() {
     { key: 'entertainment', label: 'エンタメ' },
     { key: 'date', label: '日付' },
     { key: 'place', label: '場所' },
-    { key: 'body', label: '体' },
   ];
 
   const CANNED_PHRASES: Record<string,string[]> = {
@@ -424,7 +423,7 @@ export default function ChatPage() {
                   setDeleteTargetId((prev) => (prev === m.id ? null : m.id));
                 }
               }}
-              className={`relative max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2 cursor-pointer active:scale-[0.99]`}`}
+              className={`relative max-w-[80%] rounded-2xl px-4 py-2 ${m.sender === currentUser ? `${getBubbleClass(currentUser)} border-2 cursor-pointer active:scale-[0.99]` : `${getBubbleClass(m.sender)} border-2`}`}
             >
               {m.sender === currentUser ? (
                 <div
@@ -448,7 +447,7 @@ export default function ChatPage() {
                     e.stopPropagation();
                     deleteMessage(m.id);
                   }}
-                  className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white hover:bg-white/25"
+                  className="mt-2 inline-flex items-center gap-1 rounded-full border border-red-400 bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-600"
                 >
                   削除
                 </button>
