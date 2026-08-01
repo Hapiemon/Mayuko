@@ -18,6 +18,14 @@ interface QuizQuestion {
 
 const PRIZE_LADDER = [10000, 20000, 30000, 50000, 100000, 150000, 250000, 500000, 750000, 1000000, 1500000, 2500000, 5000000, 7500000, 10000000];
 const CHOICE_LABELS = ['A', 'B', 'C', 'D'] as const;
+const FIRST_SAFETY_NET = 100000;
+const SECOND_SAFETY_NET = 1000000;
+
+type MillionaireRanking = {
+  cumulative_value: number;
+  best_value: number;
+  extra_value: number;
+};
 
 type LifelineState = {
   fiftyUsed: boolean;
@@ -40,6 +48,10 @@ export default function MillionairePage() {
   const [wonPrize, setWonPrize] = useState(0);
   const [answeredStage, setAnsweredStage] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
+  const [rankingStats, setRankingStats] = useState<MillionaireRanking>({ cumulative_value: 0, best_value: 0, extra_value: 0 });
+  const [resultBestPrize, setResultBestPrize] = useState(0);
+  const [resultTotalPrize, setResultTotalPrize] = useState(0);
+  const [resultCurrentPrize, setResultCurrentPrize] = useState(0);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -71,6 +83,30 @@ export default function MillionairePage() {
     };
 
     loadQuestions();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const loadRanking = async () => {
+      try {
+        const res = await fetch('/api/game-rankings');
+        if (!res.ok) {
+          throw new Error('failed');
+        }
+        const data = (await res.json()) as Array<{ user_name: string; game_type: string; cumulative_value: number; best_value: number; extra_value: number }>;
+        const row = data.find((item) => item.user_name === currentUser && item.game_type === 'millionaire');
+        setRankingStats({
+          cumulative_value: Number(row?.cumulative_value ?? 0),
+          best_value: Number(row?.best_value ?? 0),
+          extra_value: Number(row?.extra_value ?? 0),
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadRanking();
   }, [currentUser]);
 
   const buildStageQuestions = (source: QuizQuestion[]) => {
@@ -111,6 +147,10 @@ export default function MillionairePage() {
 
   const currentQuestion = stageQuestions[currentStage];
   const stageNumber = currentStage + 1;
+  const currentPrizeValue = PRIZE_LADDER[currentStage] ?? 0;
+  const safePrize = wonPrize >= SECOND_SAFETY_NET ? SECOND_SAFETY_NET : wonPrize >= FIRST_SAFETY_NET ? FIRST_SAFETY_NET : 0;
+
+  const getAnswerKey = (question: QuizQuestion) => question.answer_key ?? CHOICE_LABELS[(question.answer_index - 1) as 0 | 1 | 2 | 3];
 
   const visibleChoices = useMemo(() => {
     if (!currentQuestion) return [];
@@ -122,8 +162,13 @@ export default function MillionairePage() {
     }));
   }, [currentQuestion, hiddenChoices]);
 
-  const saveRanking = async (prize: number, bestStage: number, clearCount: number) => {
-    if (!currentUser || saved) return;
+  const saveRanking = async (prize: number, cleared: boolean) => {
+    if (!currentUser || saved) {
+      return {
+        bestPrize: Math.max(rankingStats.best_value, prize),
+        totalPrize: rankingStats.cumulative_value + prize,
+      };
+    }
     try {
       await fetch('/api/game-rankings', {
         method: 'POST',
@@ -132,21 +177,38 @@ export default function MillionairePage() {
           userName: currentUser,
           gameType: 'millionaire',
           cumulativeDelta: prize,
-          bestValue: bestStage,
-          extraValue: clearCount,
+          bestValue: prize,
+          extraValue: rankingStats.extra_value + (cleared ? 1 : 0),
         }),
       });
       setSaved(true);
+      const next = {
+        cumulative_value: rankingStats.cumulative_value + prize,
+        best_value: Math.max(rankingStats.best_value, prize),
+        extra_value: rankingStats.extra_value + (cleared ? 1 : 0),
+      };
+      setRankingStats(next);
+      return {
+        bestPrize: next.best_value,
+        totalPrize: next.cumulative_value,
+      };
     } catch (err) {
       console.error(err);
+      return {
+        bestPrize: Math.max(rankingStats.best_value, prize),
+        totalPrize: rankingStats.cumulative_value + prize,
+      };
     }
   };
 
-  const finishGame = async (message: string, prize: number, bestStage: number, clearCount: number) => {
+  const finishGame = async (message: string, prize: number, cleared: boolean) => {
     setFinished(true);
     setWonPrize(prize);
     setStatus(message);
-    await saveRanking(prize, bestStage, clearCount);
+    setResultCurrentPrize(prize);
+    const result = await saveRanking(prize, cleared);
+    setResultBestPrize(result.bestPrize);
+    setResultTotalPrize(result.totalPrize);
   };
 
   const handleAnswer = async (choiceNumber: number) => {
@@ -156,14 +218,18 @@ export default function MillionairePage() {
     const isCorrect = choiceNumber === currentQuestion.answer_index;
 
     if (isCorrect) {
-      const prize = PRIZE_LADDER[currentStage] ?? wonPrize;
+      const prize = currentQuestion.prize_amount ?? currentPrizeValue;
       if (currentStage === 14 || currentStage === stageQuestions.length - 1) {
-        await finishGame('🎉 全問正解でクリア！', prize, stageNumber, 1);
+        await finishGame('🎉 全問正解でクリア！', prize, true);
         return;
       }
 
       setWonPrize(prize);
-      setStatus(`正解！ ${new Intl.NumberFormat('ja-JP').format(prize)}円獲得。次の問題へ。`);
+      if (stageNumber >= 12) {
+        setStatus(`正解！ ¥${new Intl.NumberFormat('ja-JP').format(prize)}獲得。この${new Intl.NumberFormat('ja-JP').format(prize)}円にはもう戻れません。みのもんたが小切手を破りました… 次の問題へ。`);
+      } else {
+        setStatus(`正解！ ¥${new Intl.NumberFormat('ja-JP').format(prize)}獲得。次の問題へ。`);
+      }
       window.setTimeout(() => {
         setCurrentStage((prev) => prev + 1);
         setHiddenChoices([]);
@@ -180,11 +246,15 @@ export default function MillionairePage() {
     }
 
     await finishGame(
-      `不正解… 正解は ${currentQuestion.answer_key ?? CHOICE_LABELS[currentQuestion.answer_index - 1]} でした。`,
-      wonPrize,
-      Math.max(currentStage, 0),
-      0,
+      `不正解… 正解は ${getAnswerKey(currentQuestion)} でした。セーフティネットにより ¥${safePrize.toLocaleString('ja-JP')} 獲得です。`,
+      safePrize,
+      false,
     );
+  };
+
+  const handleDropout = async () => {
+    if (!currentQuestion || finished || answeredStage === currentStage) return;
+    await finishGame(`ドロップアウトしました。¥${wonPrize.toLocaleString('ja-JP')} を獲得して終了です。`, wonPrize, false);
   };
 
   const useFifty = () => {
@@ -221,6 +291,9 @@ export default function MillionairePage() {
     setWonPrize(0);
     setAnsweredStage(null);
     setSaved(false);
+    setResultBestPrize(0);
+    setResultTotalPrize(0);
+    setResultCurrentPrize(0);
   };
 
   if (!currentUser) {
@@ -246,7 +319,7 @@ export default function MillionairePage() {
         <section className="rounded-[2rem] border border-amber-300/20 bg-slate-950/70 p-6 shadow-2xl shadow-amber-500/10 backdrop-blur">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-amber-200">現在賞金</p>
+              <p className="text-sm text-amber-200">現在獲得済み賞金</p>
               <p className="text-3xl font-black text-amber-300">¥{wonPrize.toLocaleString('ja-JP')}</p>
             </div>
             <div className="rounded-full bg-white/10 px-4 py-2 text-sm">
@@ -287,12 +360,54 @@ export default function MillionairePage() {
             {status}
           </div>
 
+          {!finished && (
+            <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-3">
+              <div>
+                <p className="text-xs text-white/60">現在の問題</p>
+                <p className="mt-1 font-semibold">第{stageNumber}問 / ¥{currentPrizeValue.toLocaleString('ja-JP')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-white/60">現在の保証金額</p>
+                <p className="mt-1 font-semibold">¥{safePrize.toLocaleString('ja-JP')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-white/60">ドロップアウト時</p>
+                <p className="mt-1 font-semibold">¥{wonPrize.toLocaleString('ja-JP')}</p>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5 flex flex-wrap gap-2">
             <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">50:50</button>
             <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">テレフォン</button>
             <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className="rounded-full bg-fuchsia-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">セイフティ</button>
+            <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className="rounded-full bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">ドロップアウト</button>
             <button onClick={restart} disabled={allQuestions.length === 0} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20 disabled:opacity-40">最初から</button>
           </div>
+
+          {finished && (
+            <div className="mt-5 rounded-[2rem] border border-amber-300/20 bg-amber-400/10 p-5 text-center">
+              <p className="text-4xl font-black text-amber-200 md:text-5xl">結果</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white/10 px-4 py-4">
+                  <p className="text-sm text-white/70">今回獲得金額</p>
+                  <p className="mt-1 text-3xl font-black">¥{resultCurrentPrize.toLocaleString('ja-JP')}</p>
+                </div>
+                <div className="rounded-xl bg-white/10 px-4 py-4">
+                  <p className="text-sm text-white/70">最高獲得金額</p>
+                  <p className="mt-1 text-3xl font-black">¥{resultBestPrize.toLocaleString('ja-JP')}</p>
+                </div>
+                <div className="rounded-xl bg-white/10 px-4 py-4">
+                  <p className="text-sm text-white/70">総獲得金額</p>
+                  <p className="mt-1 text-3xl font-black">¥{resultTotalPrize.toLocaleString('ja-JP')}</p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                <button onClick={restart} className="rounded-full bg-amber-400 px-5 py-2 font-semibold text-slate-950 hover:bg-amber-300">もう一度挑戦</button>
+                <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-5 py-2 font-semibold hover:bg-white/20">ランキングを見る</button>
+              </div>
+            </div>
+          )}
         </section>
 
         <aside className="space-y-4">
@@ -312,22 +427,18 @@ export default function MillionairePage() {
                 const originalIndex = PRIZE_LADDER.length - 1 - index;
                 const active = currentStage === originalIndex && !finished;
                 const cleared = wonPrize >= prize;
+                const isSafetyNet = prize === FIRST_SAFETY_NET || prize === SECOND_SAFETY_NET;
                 return (
                   <li key={prize} className={`rounded-xl px-3 py-2 ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
-                    {originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}</span>
+                      {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">セーフティ</span>}
+                    </div>
                   </li>
                 );
               })}
             </ol>
           </div>
-
-          {finished && (
-            <div className="rounded-[2rem] border border-amber-300/20 bg-amber-400/10 p-4">
-              <p className="text-sm text-amber-200">結果</p>
-              <p className="mt-2 text-lg font-bold">獲得賞金: ¥{wonPrize.toLocaleString('ja-JP')}</p>
-              <p className="mt-1 text-sm text-white/80">到達: 第{Math.max(currentStage, wonPrize > 0 ? currentStage + 1 : 1)}問</p>
-            </div>
-          )}
         </aside>
       </main>
     </div>

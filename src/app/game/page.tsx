@@ -15,11 +15,21 @@ interface RankingRow {
   extra_value: number;
 }
 
-function renderRankingSummary(row: RankingRow, gameType: string) {
-  if (gameType === 'millionaire') {
+type RankingGroupKey = 'millionaire_total' | 'millionaire_best' | 'brain_training' | 'spot_difference';
+
+function renderRankingSummary(row: RankingRow, gameType: RankingGroupKey) {
+  if (gameType === 'millionaire_total') {
     return {
-      total: `累計: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
-      best: `最高到達: ${row.best_value}`,
+      total: `総獲得: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
+      best: `最高獲得: ¥${Number(row.best_value).toLocaleString('ja-JP')}`,
+      extra: `クリア回数: ${row.extra_value}`,
+    };
+  }
+
+  if (gameType === 'millionaire_best') {
+    return {
+      total: `最高獲得: ¥${Number(row.best_value).toLocaleString('ja-JP')}`,
+      best: `総獲得: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
       extra: `クリア回数: ${row.extra_value}`,
     };
   }
@@ -48,7 +58,8 @@ function renderRankingSummary(row: RankingRow, gameType: string) {
 }
 
 const GAME_LABELS: Record<string, string> = {
-  millionaire: 'ミリオネア',
+  millionaire_total: 'ミリオネア 総獲得金額',
+  millionaire_best: 'ミリオネア 最高獲得金額',
   brain_training: '脳トレ',
   spot_difference: '鼻ほじり',
 };
@@ -102,21 +113,50 @@ export default function GameHubPage() {
   }, [currentUser]);
 
   const grouped = useMemo(() => {
-    return ['millionaire', 'brain_training', 'spot_difference'].map((key) => ({
-      key,
-      rows: [...rankings.filter((row) => row.game_type === key)]
-        .sort((a, b) => {
-          if (key === 'spot_difference') {
-            const scoreA = a.best_value === 0 ? Number.MAX_SAFE_INTEGER : a.best_value;
-            const scoreB = b.best_value === 0 ? Number.MAX_SAFE_INTEGER : b.best_value;
-            if (scoreA !== scoreB) return scoreA - scoreB;
+    const millionaireRows = rankings.filter((row) => row.game_type === 'millionaire');
+
+    return [
+      {
+        key: 'millionaire_total' as const,
+        rows: [...millionaireRows]
+          .sort((a, b) => {
+            if (b.cumulative_value !== a.cumulative_value) return b.cumulative_value - a.cumulative_value;
+            if (b.best_value !== a.best_value) return b.best_value - a.best_value;
             return b.extra_value - a.extra_value;
-          }
-          if (b.cumulative_value !== a.cumulative_value) return b.cumulative_value - a.cumulative_value;
-          return b.best_value - a.best_value;
+          })
+          .slice(0, 10),
+      },
+      {
+        key: 'millionaire_best' as const,
+        rows: [...millionaireRows]
+          .sort((a, b) => {
+            if (b.best_value !== a.best_value) return b.best_value - a.best_value;
+            if (b.cumulative_value !== a.cumulative_value) return b.cumulative_value - a.cumulative_value;
+            return b.extra_value - a.extra_value;
+          })
+          .slice(0, 10),
+      },
+      {
+        key: 'brain_training' as const,
+        rows: [...rankings.filter((row) => row.game_type === 'brain_training')]
+          .sort((a, b) => {
+            if (b.cumulative_value !== a.cumulative_value) return b.cumulative_value - a.cumulative_value;
+            return b.best_value - a.best_value;
+          })
+          .slice(0, 10),
+      },
+      {
+        key: 'spot_difference' as const,
+        rows: [...rankings.filter((row) => row.game_type === 'spot_difference')]
+        .sort((a, b) => {
+          const scoreA = a.best_value === 0 ? Number.MAX_SAFE_INTEGER : a.best_value;
+          const scoreB = b.best_value === 0 ? Number.MAX_SAFE_INTEGER : b.best_value;
+          if (scoreA !== scoreB) return scoreA - scoreB;
+          return b.extra_value - a.extra_value;
         })
         .slice(0, 10),
-    }));
+      },
+    ];
   }, [rankings]);
 
   const textSizeClass =
@@ -175,7 +215,7 @@ export default function GameHubPage() {
           {loading ? (
             <p className={`mt-4 text-white/70 ${textSizeClass}`}>読込中...</p>
           ) : (
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
               {grouped.map(({ key, rows }) => (
                 <div key={key} className="rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
                   <h3 className="text-lg font-semibold">{GAME_LABELS[key]}</h3>
