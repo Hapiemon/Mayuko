@@ -19,11 +19,11 @@ interface RankingRow {
 }
 
 const BASE_COURSE_WIDTH = 860;
-const COURSE_HEIGHT = 2850;
+const COURSE_HEIGHT = 1120;
 const COURSE_LEFT = 80;
 const COURSE_TOP = 80;
 const COURSE_RIGHT = 780;
-const COURSE_BOTTOM = 2760;
+const COURSE_BOTTOM = 1040;
 const BALL_RADIUS = 18;
 const HOLE_RADIUS = 34;
 // 基本摩擦係数（線形減速）
@@ -44,45 +44,23 @@ function clamp(value: number, min: number, max: number) {
 }
 
 const FIXED_PIPE_POINTS: Point[] = [
-  // 左上スタート → 右へ
-  { x: 130, y: 160 },
-  { x: 730, y: 160 },
-  // 右側を下へ
-  { x: 730, y: 420 },
-  // 左下方向に斜め
-  { x: 430, y: 560 },
-  // 左上方向に斜め（ジグザグ）
-  { x: 180, y: 440 },
-  // 左側を下へ
-  { x: 180, y: 740 },
-  // 右下方向に斜め
-  { x: 620, y: 920 },
-  // 右側を下へ
-  { x: 730, y: 920 },
-  { x: 730, y: 1160 },
-  // 左下方向に斜め
-  { x: 280, y: 1320 },
-  // 左へ
-  { x: 160, y: 1320 },
-  // 下へ
-  { x: 160, y: 1580 },
-  // 右下方向に斜め
-  { x: 580, y: 1760 },
-  { x: 730, y: 1760 },
-  // 下へ
-  { x: 730, y: 2020 },
-  // 左下方向に斜め
-  { x: 360, y: 2180 },
-  // 左上方向に斜め（ジグザグ）
-  { x: 180, y: 2080 },
-  // 左側を下へ
-  { x: 180, y: 2360 },
-  // 右下方向に斜め
-  { x: 560, y: 2530 },
-  // 下へ
-  { x: 560, y: 2680 },
-  // 左下方向 → 左下👃ゴール
-  { x: 160, y: 2780 },
+  // 画面中央付近スタート、密集したうねうねコース
+  { x: 430, y: 150 },
+  { x: 740, y: 150 },
+  { x: 740, y: 250 },
+  { x: 520, y: 300 },
+  { x: 700, y: 360 },
+  { x: 300, y: 430 },
+  { x: 640, y: 490 },
+  { x: 220, y: 560 },
+  { x: 610, y: 620 },
+  { x: 180, y: 700 },
+  { x: 560, y: 760 },
+  { x: 170, y: 840 },
+  { x: 520, y: 900 },
+  { x: 260, y: 960 },
+  { x: 420, y: 1000 },
+  { x: 140, y: 1040 },
 ];
 
 function buildFixedCourseLayout(): CourseLayout {
@@ -486,25 +464,19 @@ export default function SpotDifferencePage() {
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="rounded-[2rem] border border-emerald-300/20 bg-slate-950/60 p-6 shadow-2xl shadow-emerald-500/10">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className={`${secondaryTextSizeClass} text-emerald-200`}>現在の打数</p>
-              <p className="text-4xl font-black">{strokes}</p>
+              <p className="text-3xl font-black">{strokes}</p>
             </div>
             <div className={`text-right text-white/80 ${secondaryTextSizeClass}`}>
               <p>最短打数: {bestScore === 0 ? '-' : bestScore}</p>
             </div>
           </div>
 
-          <div className={`mb-4 rounded-xl bg-white/5 px-4 py-3 text-white/90 ${textSizeClass}`}>{message}</div>
+          <div className={`mb-3 rounded-xl bg-white/5 px-3 py-2 text-white/90 ${secondaryTextSizeClass}`}>{message}</div>
 
-          {/* スクロールコンテナ */}
-          <div
-            className="rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3"
-            style={{ maxHeight: '85vh', overflowY: 'scroll', scrollbarWidth: 'thin', scrollbarColor: 'rgba(52,211,153,0.55) rgba(15,23,42,0.6)' }}
-          >
-            {/* 幅計測用の内側div */}
-            <div ref={containerRef} className="w-full">
+          <div ref={containerRef} className="rounded-[1.5rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-2">
             {/* xScale: SVG描画用にベース座標(860)をコンテナ幅にスケール */}
             {(() => {
             const xScale = svgWidth / BASE_COURSE_WIDTH;
@@ -655,7 +627,6 @@ export default function SpotDifferencePage() {
             </svg>
             );
             })()}
-            </div>
           </div>
 
           {finished && (
