@@ -495,9 +495,18 @@ export default function SpotDifferencePage() {
                 👃
               </text>
               {success && (
-                <text x={course.hole.x - 10} y={course.hole.y + 20} textAnchor="middle" fontSize={fingerFontSize}>
-                  ☝️
-                </text>
+                <g transform={`translate(${course.hole.x - 10}, ${course.hole.y + 52})`}>
+                  <animateTransform
+                    attributeName="transform"
+                    type="translate"
+                    values={`${course.hole.x - 10} ${course.hole.y + 62}; ${course.hole.x - 10} ${course.hole.y + 36}; ${course.hole.x - 10} ${course.hole.y + 62}`}
+                    dur="0.85s"
+                    repeatCount="indefinite"
+                  />
+                  <text x="0" y="0" textAnchor="middle" fontSize={fingerFontSize}>
+                    ☝️
+                  </text>
+                </g>
               )}
 
               {isDragging && dragPoint && (
