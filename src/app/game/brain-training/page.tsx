@@ -37,12 +37,12 @@ function shuffle<T>(items: T[]): T[] {
   return array;
 }
 
-function generateDeck(level: number): { cards: Card[]; gridSize: number; deckEmoji: string } {
+function generateDeck(level: number): { cards: Card[]; gridSize: number } {
   const gridSize = LEVEL_CONFIG[level].size;
   const totalSlots = gridSize * gridSize;
   const pairCount = Math.floor(totalSlots / 2);
   const selected = shuffle(EMOJIS).slice(0, pairCount);
-  const deckEmoji = selected[Math.floor(Math.random() * selected.length)] ?? '🃏';
+  const oddCard = selected[Math.floor(Math.random() * selected.length)] ?? '🍀';
 
   const values: string[] = [];
   selected.forEach((emoji) => {
@@ -50,7 +50,7 @@ function generateDeck(level: number): { cards: Card[]; gridSize: number; deckEmo
   });
 
   if (totalSlots % 2 === 1) {
-    values.push(deckEmoji);
+    values.push(oddCard);
   }
 
   const cards = shuffle(values).map((value, index) => ({
@@ -59,7 +59,7 @@ function generateDeck(level: number): { cards: Card[]; gridSize: number; deckEmo
     isMatched: false,
   }));
 
-  return { cards, gridSize, deckEmoji };
+  return { cards, gridSize };
 }
 
 export default function BrainTrainingPage() {
@@ -74,7 +74,6 @@ export default function BrainTrainingPage() {
   const [turnCount, setTurnCount] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [totalPairs, setTotalPairs] = useState(0);
-  const [deckEmoji, setDeckEmoji] = useState('🃏');
   const [message, setMessage] = useState('レベルを選んで開始してください');
   const [saved, setSaved] = useState(false);
 
@@ -95,7 +94,6 @@ export default function BrainTrainingPage() {
     setLevel(selectedLevel);
     setGridSize(generated.gridSize);
     setCards(generated.cards);
-    setDeckEmoji(generated.deckEmoji);
     setOpenedIndices([]);
     setLockBoard(false);
     setTurnCount(0);
@@ -188,7 +186,6 @@ export default function BrainTrainingPage() {
     setTurnCount(0);
     setMatchedPairs(0);
     setTotalPairs(0);
-    setDeckEmoji('🃏');
     setSaved(false);
     setMessage('レベルを選んで開始してください');
   };
@@ -264,7 +261,7 @@ export default function BrainTrainingPage() {
                       disabled={phase !== 'playing' || card.isMatched || openedIndices.includes(index) || lockBoard}
                       className={`aspect-square rounded-xl border text-xl transition sm:text-2xl md:text-3xl ${isOpen ? 'border-cyan-200/40 bg-cyan-300/20' : 'border-cyan-300/30 bg-cyan-500/10 hover:bg-cyan-500/20'} disabled:cursor-default`}
                     >
-                      {isOpen ? card.value : deckEmoji}
+                      {isOpen ? card.value : '?'}
                     </button>
                   );
                 })}

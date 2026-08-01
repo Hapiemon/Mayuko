@@ -28,7 +28,9 @@ export default function SettingsPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<string>('');
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearingRankings, setIsClearingRankings] = useState(false);
   const [message, setMessage] = useState('');
+  const [rankingMessage, setRankingMessage] = useState('');
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [savingQuiz, setSavingQuiz] = useState(false);
@@ -96,6 +98,32 @@ export default function SettingsPage() {
       setMessage('✗ エラーが発生しました');
     } finally {
       setIsClearing(false);
+    }
+  };
+
+  const handleClearAllGameRankings = async () => {
+    if (!window.confirm('全ユーザーのゲームランキングを初期化しますか？')) {
+      return;
+    }
+
+    setIsClearingRankings(true);
+    setRankingMessage('');
+
+    try {
+      const res = await fetch('/api/game-rankings', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to clear rankings');
+      }
+
+      setRankingMessage('✓ 全ユーザーのゲームランキングを初期化しました');
+    } catch (err) {
+      console.error(err);
+      setRankingMessage('✗ ランキング初期化に失敗しました');
+    } finally {
+      setIsClearingRankings(false);
     }
   };
 
@@ -317,6 +345,25 @@ export default function SettingsPage() {
             {message && (
               <p className={`text-sm mt-3 ${message.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
                 {message}
+              </p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+            <h2 className="text-lg font-semibold mb-2 text-gray-800">ゲームランキング管理</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              全ユーザーの全ゲーム記録を削除し、ランキングを初期化します。
+            </p>
+            <button
+              onClick={handleClearAllGameRankings}
+              disabled={isClearingRankings}
+              className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              {isClearingRankings ? '処理中...' : 'ランキングを初期化する'}
+            </button>
+            {rankingMessage && (
+              <p className={`text-sm mt-3 ${rankingMessage.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
+                {rankingMessage}
               </p>
             )}
           </div>

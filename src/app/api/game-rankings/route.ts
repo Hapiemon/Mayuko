@@ -61,3 +61,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    await sql`DELETE FROM game_rankings`;
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  }
+}
