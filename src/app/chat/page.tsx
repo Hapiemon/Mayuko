@@ -536,7 +536,7 @@ export default function ChatPage() {
                 }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
               >
-                <span>鼻ほじりゲーム</span>
+                <span>鼻ほじり</span>
                 <span>👃</span>
               </button>
             </div>

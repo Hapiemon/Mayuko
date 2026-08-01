@@ -50,7 +50,7 @@ function renderRankingSummary(row: RankingRow, gameType: string) {
 const GAME_LABELS: Record<string, string> = {
   millionaire: 'ミリオネア',
   brain_training: '脳トレ',
-  spot_difference: '鼻ほじりゲーム',
+  spot_difference: '鼻ほじり',
 };
 
 export default function GameHubPage() {
@@ -157,19 +157,16 @@ export default function GameHubPage() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="grid gap-4 md:grid-cols-3">
           <Link href="/game/millionaire" className="rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5 shadow-lg shadow-amber-500/10 transition hover:-translate-y-1 hover:bg-amber-400/15">
-            <p className={`${secondaryTextSizeClass} text-amber-200`}>15問連続正解でクリア</p>
-            <h2 className="mt-2 text-2xl font-bold">💰 ミリオネア</h2>
-            <p className={`mt-3 text-white/80 ${textSizeClass}`}>50:50・テレフォン・セイフティを使って全15段を突破。</p>
+            <h2 className="mt-2 text-2xl font-bold">クイズミリオネア</h2>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>ライフラインを使って全15段を突破。</p>
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
-            <p className={`${secondaryTextSizeClass} text-cyan-200`}>レベル制の神経衰弱</p>
-            <h2 className="mt-2 text-2xl font-bold">🧠 脳トレ</h2>
-            <p className={`mt-3 text-white/80 ${textSizeClass}`}>4×4〜8×8の盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
+            <h2 className="mt-2 text-2xl font-bold">神経衰弱</h2>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
-            <p className={`${secondaryTextSizeClass} text-emerald-200`}>鼻ほじりゴルフ</p>
-            <h2 className="mt-2 text-2xl font-bold">👃 鼻ほじりゲーム</h2>
-            <p className={`mt-3 text-white/80 ${textSizeClass}`}>☝️を飛ばして👃にカップイン。少ない打数ほどランキング上位。</p>
+            <h2 className="mt-2 text-2xl font-bold">鼻ほじり</h2>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>「指」を飛ばしてに「鼻」をほじろう！少ない打数ほどランキング上位。</p>
           </Link>
         </section>
 
