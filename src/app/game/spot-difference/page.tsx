@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
 type MessageFontSize = 'small' | 'medium' | 'large';
-type GridCell = { col: number; row: number };
 
 interface CourseLayout {
   points: Point[];
@@ -33,11 +32,6 @@ const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
 const PIPE_RADIUS = 64;
 const BALL_HIT_RADIUS = 104;
-const GRID_COLS = 6;
-const GRID_ROWS = 14;
-const MIN_PATH_LENGTH = 34;
-const MAX_PATH_LENGTH = 55;
-
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
@@ -46,118 +40,40 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function keyOf(cell: GridCell) {
-  return `${cell.col},${cell.row}`;
-}
+const FIXED_PIPE_POINTS: Point[] = [
+  { x: 130, y: 160 },
+  { x: 730, y: 160 },
+  { x: 730, y: 310 },
+  { x: 190, y: 310 },
+  { x: 190, y: 460 },
+  { x: 690, y: 460 },
+  { x: 690, y: 610 },
+  { x: 130, y: 610 },
+  { x: 130, y: 760 },
+  { x: 760, y: 760 },
+  { x: 760, y: 910 },
+  { x: 170, y: 910 },
+  { x: 170, y: 1060 },
+  { x: 700, y: 1060 },
+  { x: 700, y: 1210 },
+  { x: 140, y: 1210 },
+  { x: 140, y: 1360 },
+  { x: 740, y: 1360 },
+  { x: 740, y: 1510 },
+  { x: 230, y: 1510 },
+  { x: 230, y: 1560 },
+];
 
-function toPoint(cell: GridCell): Point {
-  const stepX = (COURSE_RIGHT - COURSE_LEFT) / (GRID_COLS - 1);
-  const stepY = (COURSE_BOTTOM - COURSE_TOP) / (GRID_ROWS - 1);
+function buildFixedCourseLayout(): CourseLayout {
   return {
-    x: COURSE_LEFT + cell.col * stepX,
-    y: COURSE_TOP + cell.row * stepY,
-  };
-}
-
-function shuffleArray<T>(items: T[]): T[] {
-  const list = [...items];
-  for (let i = list.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]];
-  }
-  return list;
-}
-
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function generateRandomCourseLayout(): CourseLayout {
-  const directions: GridCell[] = [
-    { col: 1, row: 0 },
-    { col: -1, row: 0 },
-    { col: 0, row: 1 },
-    { col: 0, row: -1 },
-  ];
-
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    const targetLength = randomInt(MIN_PATH_LENGTH, MAX_PATH_LENGTH);
-    const startCell: GridCell = { col: 0, row: 0 };
-    const path: GridCell[] = [startCell];
-    const visited = new Set<string>([keyOf(startCell)]);
-    let safety = 0;
-
-    while (safety < 9000) {
-      safety += 1;
-      const current = path[path.length - 1];
-
-      if (path.length >= targetLength && current.col >= GRID_COLS - 2) {
-        break;
-      }
-
-      const nextCandidates = shuffleArray(directions)
-        .map((dir) => ({ col: current.col + dir.col, row: current.row + dir.row }))
-        .filter((cell) => cell.col >= 0 && cell.col < GRID_COLS && cell.row >= 0 && cell.row < GRID_ROWS)
-        .filter((cell) => !visited.has(keyOf(cell)));
-
-      if (nextCandidates.length === 0) {
-        if (path.length >= MIN_PATH_LENGTH && current.col >= GRID_COLS - 2) {
-          break;
-        }
-
-        const removed = path.pop();
-        if (!removed || path.length === 0) {
-          break;
-        }
-        visited.delete(keyOf(removed));
-        continue;
-      }
-
-      const next = nextCandidates[0];
-      path.push(next);
-      visited.add(keyOf(next));
-    }
-
-    if (path.length >= MIN_PATH_LENGTH) {
-      const points = path.map(toPoint);
-      return {
-        points,
-        start: points[0],
-        hole: points[points.length - 1],
-      };
-    }
-  }
-
-  const fallbackPoints: Point[] = [
-    { x: 120, y: 150 },
-    { x: 720, y: 150 },
-    { x: 720, y: 320 },
-    { x: 120, y: 320 },
-    { x: 120, y: 500 },
-    { x: 720, y: 500 },
-    { x: 720, y: 680 },
-    { x: 120, y: 680 },
-    { x: 120, y: 860 },
-    { x: 720, y: 860 },
-    { x: 720, y: 1040 },
-    { x: 120, y: 1040 },
-    { x: 120, y: 1220 },
-    { x: 720, y: 1220 },
-    { x: 720, y: 1400 },
-    { x: 120, y: 1400 },
-    { x: 120, y: 1540 },
-    { x: 700, y: 1540 },
-  ];
-
-  return {
-    points: fallbackPoints,
-    start: fallbackPoints[0],
-    hole: fallbackPoints[fallbackPoints.length - 1],
+    points: FIXED_PIPE_POINTS,
+    start: FIXED_PIPE_POINTS[0],
+    hole: FIXED_PIPE_POINTS[FIXED_PIPE_POINTS.length - 1],
   };
 }
 
 function createInitialCourse() {
-  const generated = generateRandomCourseLayout();
+  const generated = buildFixedCourseLayout();
   return {
     course: generated,
     ball: generated.start,
@@ -479,7 +395,7 @@ export default function SpotDifferencePage() {
       animationRef.current = null;
     }
     velocityRef.current = { vx: 0, vy: 0 };
-    const nextCourse = generateRandomCourseLayout();
+    const nextCourse = buildFixedCourseLayout();
     setCourse(nextCourse);
     setBall(nextCourse.start);
     setIsDragging(false);
