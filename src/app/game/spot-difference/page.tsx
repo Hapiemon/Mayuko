@@ -26,9 +26,12 @@ const COURSE_RIGHT = 780;
 const COURSE_BOTTOM = 1620;
 const BALL_RADIUS = 18;
 const HOLE_RADIUS = 34;
-const FRICTION = 0.986;
-const MIN_POWER = 4;
-const MAX_POWER = 34;
+// 基本摩擦係数（線形減速）
+const FRICTION = 0.984;
+// 速度に比例した追加抵抗係数（加速度的減速）
+const QUADRATIC_DRAG = 0.007;
+// 最大発射パワー
+const MAX_POWER = 44;
 const SPEED_STOP_THRESHOLD = 0.12;
 const PIPE_RADIUS = 64;
 const BALL_HIT_RADIUS = 104;
@@ -290,8 +293,11 @@ export default function SpotDifferencePage() {
         nextY = closest.point.y + ny * limit;
       }
 
-      velocityRef.current.vx *= FRICTION;
-      velocityRef.current.vy *= FRICTION;
+      // 速度依存摩擦: 高速時ほど強く減速する（加速度的減速）
+      const speed = Math.hypot(velocityRef.current.vx, velocityRef.current.vy);
+      const dynamicFriction = Math.max(FRICTION - QUADRATIC_DRAG * speed, 0.72);
+      velocityRef.current.vx *= dynamicFriction;
+      velocityRef.current.vy *= dynamicFriction;
 
       if (distance({ x: nextX, y: nextY }, course.hole) <= HOLE_RADIUS) {
         velocityRef.current.vx = 0;
@@ -386,7 +392,9 @@ export default function SpotDifferencePage() {
 
     const dx = aimingStartRef.current.x - dragPoint.x;
     const dy = aimingStartRef.current.y - dragPoint.y;
-    const power = clamp(Math.hypot(dx, dy) / 8, MIN_POWER, MAX_POWER);
+    // ドラッグ距離を二乗カーブでパワーにマッピング（長いほど急激に強くなる）
+    const dragDist = Math.hypot(dx, dy);
+    const power = clamp((dragDist / 220) ** 1.7 * MAX_POWER, 0.5, MAX_POWER);
     const angle = Math.atan2(dy, dx);
 
     velocityRef.current = {
