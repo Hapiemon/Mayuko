@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
 type MessageFontSize = 'small' | 'medium' | 'large';
@@ -18,7 +18,7 @@ interface RankingRow {
   best_value: number;
 }
 
-const COURSE_WIDTH = 860;
+const BASE_COURSE_WIDTH = 860;
 const COURSE_HEIGHT = 1700;
 const COURSE_LEFT = 80;
 const COURSE_TOP = 80;
@@ -137,10 +137,22 @@ export default function SpotDifferencePage() {
   const [resultBestScore, setResultBestScore] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [svgWidth, setSvgWidth] = useState(BASE_COURSE_WIDTH);
 
   useEffect(() => {
     setBall(course.start);
   }, [course]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setSvgWidth(el.clientWidth || BASE_COURSE_WIDTH);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -305,17 +317,21 @@ export default function SpotDifferencePage() {
     });
   };
 
-  const getSvgPoint = (clientX: number, clientY: number): Point | null => {
+  // 物理演算はベース座標 (0..BASE_COURSE_WIDTH) で行う。
+  // getSvgPoint はスクリーン座標 → ベース座標 に変換する。
+  const getSvgPoint = useCallback((clientX: number, clientY: number): Point | null => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
-    const scaleX = COURSE_WIDTH / rect.width;
+    // viewBox 横幅 = svgWidth、物理座標空間 = BASE_COURSE_WIDTH
+    // scaleX = BASE_COURSE_WIDTH / rect.width で物理座標へ変換
+    const scaleX = BASE_COURSE_WIDTH / rect.width;
     const scaleY = COURSE_HEIGHT / rect.height;
     return {
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY,
     };
-  };
+  }, []);
 
   const beginDragPoint = (point: Point) => {
     if (!canShoot) return;
@@ -443,11 +459,16 @@ export default function SpotDifferencePage() {
 
           <div className={`mb-4 rounded-xl bg-white/5 px-4 py-3 text-white/90 ${textSizeClass}`}>{message}</div>
 
-          <div className="overflow-hidden rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3">
+          <div ref={containerRef} className="overflow-hidden rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3">
+            {/* xScale: SVG描画用にベース座標(860)をコンテナ幅にスケール */}
+            {(() => {
+            const xScale = svgWidth / BASE_COURSE_WIDTH;
+            return (
             <svg
               ref={svgRef}
-              viewBox={`0 0 ${COURSE_WIDTH} ${COURSE_HEIGHT}`}
-              className="h-[85vh] min-h-[860px] w-full touch-none select-none"
+              viewBox={`0 0 ${svgWidth} ${COURSE_HEIGHT}`}
+              className="w-full touch-none select-none"
+              style={{ display: 'block' }}
               onPointerDown={beginPointerDrag}
               onPointerMove={movePointerDrag}
               onPointerUp={endPointerDrag}
@@ -466,10 +487,10 @@ export default function SpotDifferencePage() {
               }}
               onTouchEnd={endDrag}
             >
-              <rect x="0" y="0" width={COURSE_WIDTH} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
+              <rect x="0" y="0" width={svgWidth} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
 
               <polyline
-                points={course.points.map((point) => `${point.x},${point.y}`).join(' ')}
+                points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
                 fill="none"
                 stroke="rgba(30,41,59,0.95)"
                 strokeWidth={PIPE_RADIUS * 2 + 14}
@@ -477,7 +498,7 @@ export default function SpotDifferencePage() {
                 strokeLinejoin="round"
               />
               <polyline
-                points={course.points.map((point) => `${point.x},${point.y}`).join(' ')}
+                points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
                 fill="none"
                 stroke="rgba(187,247,208,0.22)"
                 strokeWidth={PIPE_RADIUS * 2}
@@ -485,21 +506,21 @@ export default function SpotDifferencePage() {
                 strokeLinejoin="round"
               />
 
-              <circle cx={course.start.x} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
-              <circle cx={course.start.x} cy={course.start.y} r={BALL_HIT_RADIUS} fill="rgba(255,255,255,0.01)" />
-              <text x={course.start.x} y={course.start.y + 10} textAnchor="middle" fontSize={startFontSize}>🏁</text>
+              <circle cx={course.start.x * xScale} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
+              <circle cx={course.start.x * xScale} cy={course.start.y} r={BALL_HIT_RADIUS} fill="rgba(255,255,255,0.01)" />
+              <text x={course.start.x * xScale} y={course.start.y + 10} textAnchor="middle" fontSize={startFontSize}>🏁</text>
 
-              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 10} fill="rgba(0,0,0,0.35)" />
-              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 40} fill="rgba(255,255,255,0.01)" />
-              <text x={course.hole.x} y={course.hole.y + 18} textAnchor="middle" fontSize={success ? noseFontSize + 10 : noseFontSize}>
+              <circle cx={course.hole.x * xScale} cy={course.hole.y} r={HOLE_RADIUS + 10} fill="rgba(0,0,0,0.35)" />
+              <circle cx={course.hole.x * xScale} cy={course.hole.y} r={HOLE_RADIUS + 40} fill="rgba(255,255,255,0.01)" />
+              <text x={course.hole.x * xScale} y={course.hole.y + 18} textAnchor="middle" fontSize={success ? noseFontSize + 10 : noseFontSize}>
                 👃
               </text>
               {success && (
-                <g transform={`translate(${course.hole.x - 10}, ${course.hole.y + 52})`}>
+                <g>
                   <animateTransform
                     attributeName="transform"
                     type="translate"
-                    values={`${course.hole.x - 10} ${course.hole.y + 62}; ${course.hole.x - 10} ${course.hole.y + 36}; ${course.hole.x - 10} ${course.hole.y + 62}`}
+                    values={`${course.hole.x * xScale - 10} ${course.hole.y + 62}; ${course.hole.x * xScale - 10} ${course.hole.y + 36}; ${course.hole.x * xScale - 10} ${course.hole.y + 62}`}
                     dur="0.85s"
                     repeatCount="indefinite"
                   />
@@ -511,9 +532,9 @@ export default function SpotDifferencePage() {
 
               {isDragging && dragPoint && (
                 <line
-                  x1={ball.x}
+                  x1={ball.x * xScale}
                   y1={ball.y}
-                  x2={dragPoint.x}
+                  x2={dragPoint.x * xScale}
                   y2={dragPoint.y}
                   stroke="rgba(250,204,21,0.9)"
                   strokeWidth="6"
@@ -523,11 +544,13 @@ export default function SpotDifferencePage() {
               )}
 
               {!success && (
-                <text x={ball.x} y={ball.y + 14} textAnchor="middle" fontSize={fingerFontSize}>
+                <text x={ball.x * xScale} y={ball.y + 14} textAnchor="middle" fontSize={fingerFontSize}>
                   ☝️
                 </text>
               )}
             </svg>
+            );
+            })()}
           </div>
 
           {finished && (
