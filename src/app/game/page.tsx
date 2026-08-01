@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+type MessageFontSize = 'small' | 'medium' | 'large';
+
 interface RankingRow {
   id: number;
   user_name: string;
@@ -56,6 +58,7 @@ export default function GameHubPage() {
   const [currentUser, setCurrentUser] = useState('');
   const [rankings, setRankings] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -65,6 +68,16 @@ export default function GameHubPage() {
     }
     setCurrentUser(user);
   }, [router]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const saved = localStorage.getItem(`messageFontSize:${currentUser}`) as MessageFontSize | null;
+    if (saved === 'small' || saved === 'medium' || saved === 'large') {
+      setMessageFontSize(saved);
+    } else {
+      setMessageFontSize('medium');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -91,9 +104,34 @@ export default function GameHubPage() {
   const grouped = useMemo(() => {
     return ['millionaire', 'brain_training', 'spot_difference'].map((key) => ({
       key,
-      rows: rankings.filter((row) => row.game_type === key).slice(0, 10),
+      rows: [...rankings.filter((row) => row.game_type === key)]
+        .sort((a, b) => {
+          if (key === 'spot_difference') {
+            const scoreA = a.best_value === 0 ? Number.MAX_SAFE_INTEGER : a.best_value;
+            const scoreB = b.best_value === 0 ? Number.MAX_SAFE_INTEGER : b.best_value;
+            if (scoreA !== scoreB) return scoreA - scoreB;
+            return b.extra_value - a.extra_value;
+          }
+          if (b.cumulative_value !== a.cumulative_value) return b.cumulative_value - a.cumulative_value;
+          return b.best_value - a.best_value;
+        })
+        .slice(0, 10),
     }));
   }, [rankings]);
+
+  const textSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-3xl'
+        : 'text-sm';
+
+  const secondaryTextSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-2xl'
+        : 'text-sm';
 
   if (!currentUser) {
     return null;
@@ -119,19 +157,19 @@ export default function GameHubPage() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="grid gap-4 md:grid-cols-3">
           <Link href="/game/millionaire" className="rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5 shadow-lg shadow-amber-500/10 transition hover:-translate-y-1 hover:bg-amber-400/15">
-            <p className="text-sm text-amber-200">15問連続正解でクリア</p>
+            <p className={`${secondaryTextSizeClass} text-amber-200`}>15問連続正解でクリア</p>
             <h2 className="mt-2 text-2xl font-bold">💰 ミリオネア</h2>
-            <p className="mt-3 text-sm text-white/80">50:50・テレフォン・セイフティを使って全15段を突破。</p>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>50:50・テレフォン・セイフティを使って全15段を突破。</p>
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
-            <p className="text-sm text-cyan-200">レベル制の神経衰弱</p>
+            <p className={`${secondaryTextSizeClass} text-cyan-200`}>レベル制の神経衰弱</p>
             <h2 className="mt-2 text-2xl font-bold">🧠 脳トレ</h2>
-            <p className="mt-3 text-sm text-white/80">4×4〜8×8の盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>4×4〜8×8の盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
-            <p className="text-sm text-emerald-200">反射と減速の2Dゴルフ</p>
+            <p className={`${secondaryTextSizeClass} text-emerald-200`}>鼻ほじりゴルフ</p>
             <h2 className="mt-2 text-2xl font-bold">👃 鼻ほじりゲーム</h2>
-            <p className="mt-3 text-sm text-white/80">☝️を飛ばして👃にカップイン。少ない打数ほどランキング上位。</p>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>☝️を飛ばして👃にカップイン。少ない打数ほどランキング上位。</p>
           </Link>
         </section>
 
@@ -141,11 +179,11 @@ export default function GameHubPage() {
               <p className="text-sm text-violet-200">ランキング</p>
               <h2 className="text-xl font-bold">トップ10</h2>
             </div>
-            <p className="rounded-full bg-white/10 px-3 py-1 text-sm">参加ユーザー: {currentUser}</p>
+            <p className={`rounded-full bg-white/10 px-3 py-1 ${secondaryTextSizeClass}`}>参加ユーザー: {currentUser}</p>
           </div>
 
           {loading ? (
-            <p className="mt-4 text-sm text-white/70">読込中...</p>
+            <p className={`mt-4 text-white/70 ${textSizeClass}`}>読込中...</p>
           ) : (
             <div className="mt-6 grid gap-4 lg:grid-cols-3">
               {grouped.map(({ key, rows }) => (
@@ -153,15 +191,15 @@ export default function GameHubPage() {
                   <h3 className="text-lg font-semibold">{GAME_LABELS[key]}</h3>
                   <div className="mt-3 space-y-2">
                     {rows.length === 0 ? (
-                      <p className="text-sm text-white/60">まだ記録がありません。</p>
+                      <p className={`text-white/60 ${textSizeClass}`}>まだ記録がありません。</p>
                     ) : (
                       rows.map((row, index) => (
-                        <div key={row.id} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-sm">
+                        <div key={row.id} className={`flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 ${textSizeClass}`}>
                           <div>
                             <p className="font-semibold">{index + 1}. {row.user_name}</p>
                             <p className="text-white/60">{renderRankingSummary(row, key).total}</p>
                           </div>
-                          <div className="text-right text-xs text-white/70">
+                          <div className={`text-right text-white/70 ${secondaryTextSizeClass}`}>
                             <p>{renderRankingSummary(row, key).best}</p>
                             <p>{renderRankingSummary(row, key).extra}</p>
                           </div>

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
 type Segment = { ax: number; ay: number; bx: number; by: number };
+type MessageFontSize = 'small' | 'medium' | 'large';
 
 interface RankingRow {
   user_name: string;
@@ -13,7 +14,11 @@ interface RankingRow {
 }
 
 const COURSE_WIDTH = 860;
-const COURSE_HEIGHT = 560;
+const COURSE_HEIGHT = 1260;
+const COURSE_LEFT = 70;
+const COURSE_TOP = 70;
+const COURSE_RIGHT = 790;
+const COURSE_BOTTOM = 1190;
 const BALL_RADIUS = 13;
 const HOLE_RADIUS = 22;
 const FRICTION = 0.986;
@@ -22,24 +27,23 @@ const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
 
 const WALLS: Segment[] = [
-  { ax: 90, ay: 70, bx: 760, by: 70 },
-  { ax: 90, ay: 70, bx: 90, by: 490 },
-  { ax: 760, ay: 70, bx: 760, by: 490 },
-  { ax: 90, ay: 490, bx: 760, by: 490 },
-  { ax: 220, ay: 70, bx: 220, by: 250 },
-  { ax: 220, ay: 340, bx: 220, by: 490 },
-  { ax: 220, ay: 250, bx: 420, by: 250 },
-  { ax: 300, ay: 340, bx: 500, by: 340 },
-  { ax: 420, ay: 150, bx: 420, by: 340 },
-  { ax: 420, ay: 420, bx: 420, by: 490 },
-  { ax: 420, ay: 150, bx: 620, by: 150 },
-  { ax: 520, ay: 250, bx: 760, by: 250 },
-  { ax: 620, ay: 330, bx: 620, by: 490 },
-  { ax: 620, ay: 330, bx: 740, by: 330 },
+  { ax: COURSE_LEFT, ay: COURSE_TOP, bx: COURSE_RIGHT, by: COURSE_TOP },
+  { ax: COURSE_LEFT, ay: COURSE_TOP, bx: COURSE_LEFT, by: COURSE_BOTTOM },
+  { ax: COURSE_RIGHT, ay: COURSE_TOP, bx: COURSE_RIGHT, by: COURSE_BOTTOM },
+  { ax: COURSE_LEFT, ay: COURSE_BOTTOM, bx: COURSE_RIGHT, by: COURSE_BOTTOM },
+  { ax: 210, ay: COURSE_TOP, bx: 210, by: 1000 },
+  { ax: 350, ay: 270, bx: 350, by: COURSE_BOTTOM },
+  { ax: 500, ay: COURSE_TOP, bx: 500, by: 1000 },
+  { ax: 650, ay: 270, bx: 650, by: COURSE_BOTTOM },
+  { ax: 210, ay: 220, bx: 470, by: 220 },
+  { ax: 350, ay: 440, bx: 790, by: 440 },
+  { ax: COURSE_LEFT, ay: 660, bx: 500, by: 660 },
+  { ax: 350, ay: 880, bx: 790, by: 880 },
+  { ax: 210, ay: 1090, bx: 620, by: 1090 },
 ];
 
-const START_POINT: Point = { x: 130, y: 130 };
-const HOLE_POINT: Point = { x: 720, y: 440 };
+const START_POINT: Point = { x: 120, y: 150 };
+const HOLE_POINT: Point = { x: 730, y: 180 };
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -100,6 +104,7 @@ export default function SpotDifferencePage() {
   const [resultScore, setResultScore] = useState(0);
   const [resultBestScore, setResultBestScore] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -109,6 +114,16 @@ export default function SpotDifferencePage() {
     }
     setCurrentUser(user);
   }, [router]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const saved = localStorage.getItem(`messageFontSize:${currentUser}`) as MessageFontSize | null;
+    if (saved === 'small' || saved === 'medium' || saved === 'large') {
+      setMessageFontSize(saved);
+    } else {
+      setMessageFontSize('medium');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -135,6 +150,20 @@ export default function SpotDifferencePage() {
       }
     };
   }, []);
+
+  const textSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-3xl'
+        : 'text-sm';
+
+  const secondaryTextSizeClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-2xl'
+        : 'text-sm';
 
   const canShoot = useMemo(() => !finished && Math.hypot(velocityRef.current.vx, velocityRef.current.vy) < SPEED_STOP_THRESHOLD, [finished, ball]);
 
@@ -175,13 +204,13 @@ export default function SpotDifferencePage() {
       let nextX = prev.x + velocityRef.current.vx;
       let nextY = prev.y + velocityRef.current.vy;
 
-      if (nextX - BALL_RADIUS <= 90 || nextX + BALL_RADIUS >= 760) {
+      if (nextX - BALL_RADIUS <= COURSE_LEFT || nextX + BALL_RADIUS >= COURSE_RIGHT) {
         velocityRef.current.vx *= -0.92;
-        nextX = clamp(nextX, 90 + BALL_RADIUS, 760 - BALL_RADIUS);
+        nextX = clamp(nextX, COURSE_LEFT + BALL_RADIUS, COURSE_RIGHT - BALL_RADIUS);
       }
-      if (nextY - BALL_RADIUS <= 70 || nextY + BALL_RADIUS >= 490) {
+      if (nextY - BALL_RADIUS <= COURSE_TOP || nextY + BALL_RADIUS >= COURSE_BOTTOM) {
         velocityRef.current.vy *= -0.92;
-        nextY = clamp(nextY, 70 + BALL_RADIUS, 490 - BALL_RADIUS);
+        nextY = clamp(nextY, COURSE_TOP + BALL_RADIUS, COURSE_BOTTOM - BALL_RADIUS);
       }
 
       for (const wall of WALLS.slice(4)) {
@@ -269,7 +298,7 @@ export default function SpotDifferencePage() {
     };
 
     setStrokes((prev) => prev + 1);
-    setMessage('☝️発射！ 壁に当たると反射します。');
+    setMessage('☝️発射！');
     setIsDragging(false);
     setDragPoint(null);
 
@@ -321,23 +350,22 @@ export default function SpotDifferencePage() {
         <section className="rounded-[2rem] border border-emerald-300/20 bg-slate-950/60 p-6 shadow-2xl shadow-emerald-500/10">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-emerald-200">現在の打数</p>
+              <p className={`${secondaryTextSizeClass} text-emerald-200`}>現在の打数</p>
               <p className="text-4xl font-black">{strokes}</p>
             </div>
-            <div className="text-right text-sm text-white/80">
+            <div className={`text-right text-white/80 ${secondaryTextSizeClass}`}>
               <p>最短打数: {bestScore === 0 ? '-' : bestScore}</p>
-              <p>目安: 20打前後でクリア</p>
-              <p>壁反射 + 減速あり</p>
+              <p>目安: 20打前後</p>
             </div>
           </div>
 
-          <div className="mb-4 rounded-xl bg-white/5 px-4 py-3 text-sm text-white/90">{message}</div>
+          <div className={`mb-4 rounded-xl bg-white/5 px-4 py-3 text-white/90 ${textSizeClass}`}>{message}</div>
 
           <div className="overflow-hidden rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3">
             <svg
               ref={svgRef}
               viewBox={`0 0 ${COURSE_WIDTH} ${COURSE_HEIGHT}`}
-              className="w-full touch-none select-none"
+              className="h-[78vh] min-h-[620px] w-full touch-none select-none"
               onMouseDown={(e) => beginDrag(e.clientX, e.clientY)}
               onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
               onMouseUp={endDrag}
@@ -352,7 +380,16 @@ export default function SpotDifferencePage() {
               }}
               onTouchEnd={endDrag}
             >
-              <rect x="90" y="70" width="670" height="420" rx="28" fill="rgba(22,163,74,0.18)" stroke="rgba(255,255,255,0.18)" strokeWidth="10" />
+              <rect
+                x={COURSE_LEFT}
+                y={COURSE_TOP}
+                width={COURSE_RIGHT - COURSE_LEFT}
+                height={COURSE_BOTTOM - COURSE_TOP}
+                rx="28"
+                fill="rgba(22,163,74,0.18)"
+                stroke="rgba(255,255,255,0.18)"
+                strokeWidth="10"
+              />
 
               {WALLS.slice(4).map((wall, index) => (
                 <line
@@ -406,25 +443,25 @@ export default function SpotDifferencePage() {
               <p className="text-4xl font-black text-emerald-200 md:text-5xl">鼻ほじり成功！</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-white/10 px-4 py-4">
-                  <p className="text-xs text-white/70">今回のスコア</p>
+                  <p className={`${secondaryTextSizeClass} text-white/70`}>今回のスコア</p>
                   <p className="mt-1 text-3xl font-black">{resultScore} 打</p>
                 </div>
                 <div className="rounded-xl bg-white/10 px-4 py-4">
-                  <p className="text-xs text-white/70">最高スコア</p>
+                  <p className={`${secondaryTextSizeClass} text-white/70`}>最高スコア</p>
                   <p className="mt-1 text-3xl font-black">{resultBestScore} 打</p>
                 </div>
               </div>
-              {isNewBest && <p className="mt-4 text-lg font-semibold text-amber-300">最短打数を更新しました！</p>}
+              {isNewBest && <p className={`mt-4 font-semibold text-amber-300 ${secondaryTextSizeClass}`}>最短打数を更新しました！</p>}
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                <button onClick={restart} className="rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">もう一度挑戦</button>
-                <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold hover:bg-white/20">ランキングを見る</button>
+                <button onClick={restart} className={`rounded-full bg-emerald-400 px-5 py-2 font-semibold text-slate-950 hover:bg-emerald-300 ${secondaryTextSizeClass}`}>もう一度挑戦</button>
+                <button onClick={() => router.push('/game')} className={`rounded-full bg-white/10 px-5 py-2 font-semibold hover:bg-white/20 ${secondaryTextSizeClass}`}>ランキングを見る</button>
               </div>
             </div>
           )}
 
           {!finished && (
             <div className="mt-5 flex gap-2">
-              <button onClick={restart} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">最初から</button>
+              <button onClick={restart} className={`rounded-full bg-white/10 px-4 py-2 font-semibold hover:bg-white/20 ${secondaryTextSizeClass}`}>最初から</button>
             </div>
           )}
         </section>
