@@ -171,12 +171,8 @@ export default function GameHubPage() {
         </section>
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-violet-200">ランキング</p>
-              <h2 className="text-xl font-bold">トップ10</h2>
-            </div>
-            <p className={`rounded-full bg-white/10 px-3 py-1 ${secondaryTextSizeClass}`}>参加ユーザー: {currentUser}</p>
+          <div>
+            <h2 className="text-xl font-bold">ランキング</h2>
           </div>
 
           {loading ? (
