@@ -5,6 +5,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
 type MessageFontSize = 'small' | 'medium' | 'large';
+type GridCell = { col: number; row: number };
+
+interface CourseLayout {
+  points: Point[];
+  start: Point;
+  hole: Point;
+}
 
 interface RankingRow {
   user_name: string;
@@ -24,32 +31,11 @@ const FRICTION = 0.986;
 const MIN_POWER = 4;
 const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
-const PIPE_RADIUS = 60;
-
-const PIPE_POINTS: Point[] = [
-  { x: 140, y: 160 },
-  { x: 710, y: 160 },
-  { x: 710, y: 360 },
-  { x: 170, y: 360 },
-  { x: 170, y: 560 },
-  { x: 700, y: 560 },
-  { x: 700, y: 760 },
-  { x: 170, y: 760 },
-  { x: 170, y: 960 },
-  { x: 700, y: 960 },
-  { x: 700, y: 1160 },
-  { x: 170, y: 1160 },
-  { x: 170, y: 1360 },
-  { x: 700, y: 1360 },
-  { x: 700, y: 1540 },
-  { x: 240, y: 1540 },
-  { x: 240, y: 1450 },
-  { x: 660, y: 1450 },
-  { x: 660, y: 1500 },
-];
-
-const START_POINT: Point = PIPE_POINTS[0];
-const HOLE_POINT: Point = PIPE_POINTS[PIPE_POINTS.length - 1];
+const PIPE_RADIUS = 42;
+const GRID_COLS = 6;
+const GRID_ROWS = 14;
+const MIN_PATH_LENGTH = 34;
+const MAX_PATH_LENGTH = 55;
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -57,6 +43,116 @@ function distance(a: Point, b: Point) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function keyOf(cell: GridCell) {
+  return `${cell.col},${cell.row}`;
+}
+
+function toPoint(cell: GridCell): Point {
+  const stepX = (COURSE_RIGHT - COURSE_LEFT) / (GRID_COLS - 1);
+  const stepY = (COURSE_BOTTOM - COURSE_TOP) / (GRID_ROWS - 1);
+  return {
+    x: COURSE_LEFT + cell.col * stepX,
+    y: COURSE_TOP + cell.row * stepY,
+  };
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function randomInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateRandomCourseLayout(): CourseLayout {
+  const directions: GridCell[] = [
+    { col: 1, row: 0 },
+    { col: -1, row: 0 },
+    { col: 0, row: 1 },
+    { col: 0, row: -1 },
+  ];
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const targetLength = randomInt(MIN_PATH_LENGTH, MAX_PATH_LENGTH);
+    const startCell: GridCell = { col: 0, row: 0 };
+    const path: GridCell[] = [startCell];
+    const visited = new Set<string>([keyOf(startCell)]);
+    let safety = 0;
+
+    while (safety < 9000) {
+      safety += 1;
+      const current = path[path.length - 1];
+
+      if (path.length >= targetLength && current.col >= GRID_COLS - 2) {
+        break;
+      }
+
+      const nextCandidates = shuffleArray(directions)
+        .map((dir) => ({ col: current.col + dir.col, row: current.row + dir.row }))
+        .filter((cell) => cell.col >= 0 && cell.col < GRID_COLS && cell.row >= 0 && cell.row < GRID_ROWS)
+        .filter((cell) => !visited.has(keyOf(cell)));
+
+      if (nextCandidates.length === 0) {
+        if (path.length >= MIN_PATH_LENGTH && current.col >= GRID_COLS - 2) {
+          break;
+        }
+
+        const removed = path.pop();
+        if (!removed || path.length === 0) {
+          break;
+        }
+        visited.delete(keyOf(removed));
+        continue;
+      }
+
+      const next = nextCandidates[0];
+      path.push(next);
+      visited.add(keyOf(next));
+    }
+
+    if (path.length >= MIN_PATH_LENGTH) {
+      const points = path.map(toPoint);
+      return {
+        points,
+        start: points[0],
+        hole: points[points.length - 1],
+      };
+    }
+  }
+
+  const fallbackPoints: Point[] = [
+    { x: 120, y: 150 },
+    { x: 720, y: 150 },
+    { x: 720, y: 320 },
+    { x: 120, y: 320 },
+    { x: 120, y: 500 },
+    { x: 720, y: 500 },
+    { x: 720, y: 680 },
+    { x: 120, y: 680 },
+    { x: 120, y: 860 },
+    { x: 720, y: 860 },
+    { x: 720, y: 1040 },
+    { x: 120, y: 1040 },
+    { x: 120, y: 1220 },
+    { x: 720, y: 1220 },
+    { x: 720, y: 1400 },
+    { x: 120, y: 1400 },
+    { x: 120, y: 1540 },
+    { x: 700, y: 1540 },
+  ];
+
+  return {
+    points: fallbackPoints,
+    start: fallbackPoints[0],
+    hole: fallbackPoints[fallbackPoints.length - 1],
+  };
 }
 
 function reflectVelocityByNormal(vx: number, vy: number, nx: number, ny: number) {
@@ -76,13 +172,13 @@ function closestPointOnSegment(point: Point, a: Point, b: Point): Point {
   return { x: a.x + vx * t, y: a.y + vy * t };
 }
 
-function findClosestPointOnPipe(point: Point) {
-  let bestPoint = PIPE_POINTS[0];
+function findClosestPointOnPipe(point: Point, pipePoints: Point[]) {
+  let bestPoint = pipePoints[0];
   let bestDistance = Number.POSITIVE_INFINITY;
 
-  for (let index = 0; index < PIPE_POINTS.length - 1; index += 1) {
-    const a = PIPE_POINTS[index];
-    const b = PIPE_POINTS[index + 1];
+  for (let index = 0; index < pipePoints.length - 1; index += 1) {
+    const a = pipePoints[index];
+    const b = pipePoints[index + 1];
     const candidate = closestPointOnSegment(point, a, b);
     const d = distance(point, candidate);
     if (d < bestDistance) {
@@ -101,7 +197,11 @@ export default function SpotDifferencePage() {
   const velocityRef = useRef({ vx: 0, vy: 0 });
   const aimingStartRef = useRef<Point | null>(null);
   const [currentUser, setCurrentUser] = useState('');
-  const [ball, setBall] = useState<Point>(START_POINT);
+  const [course, setCourse] = useState<CourseLayout>(() => generateRandomCourseLayout());
+  const [ball, setBall] = useState<Point>(() => {
+    const initial = generateRandomCourseLayout();
+    return initial.start;
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragPoint, setDragPoint] = useState<Point | null>(null);
   const [strokes, setStrokes] = useState(0);
@@ -114,6 +214,10 @@ export default function SpotDifferencePage() {
   const [resultBestScore, setResultBestScore] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
+
+  useEffect(() => {
+    setBall(course.start);
+  }, [course]);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -213,7 +317,7 @@ export default function SpotDifferencePage() {
       let nextX = prev.x + velocityRef.current.vx;
       let nextY = prev.y + velocityRef.current.vy;
 
-      const closest = findClosestPointOnPipe({ x: nextX, y: nextY });
+      const closest = findClosestPointOnPipe({ x: nextX, y: nextY }, course.points);
       const limit = PIPE_RADIUS - BALL_RADIUS;
       if (closest.distance > limit) {
         const nxRaw = nextX - closest.point.x;
@@ -233,13 +337,13 @@ export default function SpotDifferencePage() {
       velocityRef.current.vx *= FRICTION;
       velocityRef.current.vy *= FRICTION;
 
-      if (distance({ x: nextX, y: nextY }, HOLE_POINT) <= HOLE_RADIUS) {
+      if (distance({ x: nextX, y: nextY }, course.hole) <= HOLE_RADIUS) {
         velocityRef.current.vx = 0;
         velocityRef.current.vy = 0;
         window.setTimeout(() => {
           finishGame(strokes);
         }, 120);
-        return { x: HOLE_POINT.x, y: HOLE_POINT.y };
+        return { x: course.hole.x, y: course.hole.y };
       }
 
       if (Math.hypot(velocityRef.current.vx, velocityRef.current.vy) <= SPEED_STOP_THRESHOLD) {
@@ -320,7 +424,9 @@ export default function SpotDifferencePage() {
       animationRef.current = null;
     }
     velocityRef.current = { vx: 0, vy: 0 };
-    setBall(START_POINT);
+    const nextCourse = generateRandomCourseLayout();
+    setCourse(nextCourse);
+    setBall(nextCourse.start);
     setIsDragging(false);
     setDragPoint(null);
     setStrokes(0);
@@ -389,7 +495,7 @@ export default function SpotDifferencePage() {
               <rect x="0" y="0" width={COURSE_WIDTH} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
 
               <polyline
-                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
+                points={course.points.map((point) => `${point.x},${point.y}`).join(' ')}
                 fill="none"
                 stroke="rgba(30,41,59,0.95)"
                 strokeWidth={PIPE_RADIUS * 2 + 14}
@@ -397,32 +503,23 @@ export default function SpotDifferencePage() {
                 strokeLinejoin="round"
               />
               <polyline
-                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
+                points={course.points.map((point) => `${point.x},${point.y}`).join(' ')}
                 fill="none"
                 stroke="rgba(187,247,208,0.22)"
                 strokeWidth={PIPE_RADIUS * 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              <polyline
-                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
-                fill="none"
-                stroke="rgba(226,232,240,0.4)"
-                strokeWidth={8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="16 14"
-              />
 
-              <circle cx={START_POINT.x} cy={START_POINT.y} r="22" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
-              <text x={START_POINT.x} y={START_POINT.y + 7} textAnchor="middle" fontSize="22">🏁</text>
+              <circle cx={course.start.x} cy={course.start.y} r="22" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
+              <text x={course.start.x} y={course.start.y + 7} textAnchor="middle" fontSize="22">🏁</text>
 
-              <circle cx={HOLE_POINT.x} cy={HOLE_POINT.y} r={HOLE_RADIUS + 6} fill="rgba(0,0,0,0.35)" />
-              <text x={HOLE_POINT.x} y={HOLE_POINT.y + 12} textAnchor="middle" fontSize={success ? '48' : '42'}>
+              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 6} fill="rgba(0,0,0,0.35)" />
+              <text x={course.hole.x} y={course.hole.y + 12} textAnchor="middle" fontSize={success ? '48' : '42'}>
                 👃
               </text>
               {success && (
-                <text x={HOLE_POINT.x - 6} y={HOLE_POINT.y + 15} textAnchor="middle" fontSize="30">
+                <text x={course.hole.x - 6} y={course.hole.y + 15} textAnchor="middle" fontSize="30">
                   ☝️
                 </text>
               )}
