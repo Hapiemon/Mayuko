@@ -19,11 +19,11 @@ interface RankingRow {
 }
 
 const BASE_COURSE_WIDTH = 860;
-const COURSE_HEIGHT = 1120;
+const COURSE_HEIGHT = 1260;
 const COURSE_LEFT = 80;
 const COURSE_TOP = 80;
 const COURSE_RIGHT = 780;
-const COURSE_BOTTOM = 1040;
+const COURSE_BOTTOM = 1180;
 const BALL_RADIUS = 18;
 const HOLE_RADIUS = 34;
 // 基本摩擦係数（線形減速）
@@ -33,7 +33,7 @@ const DECELERATION = 0.18;
 // 最大発射パワー
 const MAX_POWER = 44;
 const SPEED_STOP_THRESHOLD = 0.12;
-const PIPE_RADIUS = 64;
+const PIPE_RADIUS = 54;
 const BALL_HIT_RADIUS = 104;
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -44,23 +44,28 @@ function clamp(value: number, min: number, max: number) {
 }
 
 const FIXED_PIPE_POINTS: Point[] = [
-  // 画面中央付近スタート、密集したうねうねコース
-  { x: 430, y: 150 },
-  { x: 740, y: 150 },
-  { x: 740, y: 250 },
-  { x: 520, y: 300 },
-  { x: 700, y: 360 },
-  { x: 300, y: 430 },
-  { x: 640, y: 490 },
-  { x: 220, y: 560 },
-  { x: 610, y: 620 },
-  { x: 180, y: 700 },
-  { x: 560, y: 760 },
-  { x: 170, y: 840 },
-  { x: 520, y: 900 },
-  { x: 260, y: 960 },
-  { x: 420, y: 1000 },
-  { x: 140, y: 1040 },
+  // 迷路風。盤面全体を大きく使いつつ、壁に区切られた通路っぽく見える蛇行コース。
+  { x: 430, y: 130 },
+  { x: 770, y: 130 },
+  { x: 770, y: 250 },
+  { x: 620, y: 250 },
+  { x: 620, y: 330 },
+  { x: 130, y: 330 },
+  { x: 130, y: 450 },
+  { x: 340, y: 450 },
+  { x: 340, y: 530 },
+  { x: 730, y: 530 },
+  { x: 730, y: 650 },
+  { x: 500, y: 650 },
+  { x: 500, y: 730 },
+  { x: 170, y: 730 },
+  { x: 170, y: 850 },
+  { x: 650, y: 850 },
+  { x: 650, y: 930 },
+  { x: 430, y: 980 },
+  { x: 740, y: 1050 },
+  { x: 740, y: 1140 },
+  { x: 130, y: 1140 },
 ];
 
 function buildFixedCourseLayout(): CourseLayout {
@@ -531,21 +536,41 @@ export default function SpotDifferencePage() {
               </defs>
               <rect x="0" y="0" width={svgWidth} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
 
+              <rect
+                x={COURSE_LEFT * xScale - 28}
+                y={COURSE_TOP - 28}
+                width={(COURSE_RIGHT - COURSE_LEFT) * xScale + 56}
+                height={COURSE_BOTTOM - COURSE_TOP + 56}
+                rx="34"
+                fill="rgba(8,15,28,0.94)"
+                stroke="rgba(148,163,184,0.16)"
+                strokeWidth="6"
+              />
+
               <polyline
                 points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
                 fill="none"
-                stroke="rgba(30,41,59,0.95)"
-                strokeWidth={PIPE_RADIUS * 2 + 14}
+                stroke="rgba(15,23,42,0.98)"
+                strokeWidth={PIPE_RADIUS * 2 + 32}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <polyline
                 points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
                 fill="none"
-                stroke="rgba(187,247,208,0.22)"
+                stroke="rgba(16,185,129,0.18)"
                 strokeWidth={PIPE_RADIUS * 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+              />
+              <polyline
+                points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
+                fill="none"
+                stroke="rgba(187,247,208,0.12)"
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="10 14"
               />
 
               <circle cx={course.start.x * xScale} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
