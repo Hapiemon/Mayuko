@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
-type Segment = { ax: number; ay: number; bx: number; by: number };
 type MessageFontSize = 'small' | 'medium' | 'large';
 
 interface RankingRow {
@@ -14,36 +13,43 @@ interface RankingRow {
 }
 
 const COURSE_WIDTH = 860;
-const COURSE_HEIGHT = 1260;
-const COURSE_LEFT = 70;
-const COURSE_TOP = 70;
-const COURSE_RIGHT = 790;
-const COURSE_BOTTOM = 1190;
+const COURSE_HEIGHT = 1700;
+const COURSE_LEFT = 80;
+const COURSE_TOP = 80;
+const COURSE_RIGHT = 780;
+const COURSE_BOTTOM = 1620;
 const BALL_RADIUS = 13;
 const HOLE_RADIUS = 22;
 const FRICTION = 0.986;
 const MIN_POWER = 4;
 const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
+const PIPE_RADIUS = 60;
 
-const WALLS: Segment[] = [
-  { ax: COURSE_LEFT, ay: COURSE_TOP, bx: COURSE_RIGHT, by: COURSE_TOP },
-  { ax: COURSE_LEFT, ay: COURSE_TOP, bx: COURSE_LEFT, by: COURSE_BOTTOM },
-  { ax: COURSE_RIGHT, ay: COURSE_TOP, bx: COURSE_RIGHT, by: COURSE_BOTTOM },
-  { ax: COURSE_LEFT, ay: COURSE_BOTTOM, bx: COURSE_RIGHT, by: COURSE_BOTTOM },
-  { ax: 210, ay: COURSE_TOP, bx: 210, by: 1000 },
-  { ax: 350, ay: 270, bx: 350, by: COURSE_BOTTOM },
-  { ax: 500, ay: COURSE_TOP, bx: 500, by: 1000 },
-  { ax: 650, ay: 270, bx: 650, by: COURSE_BOTTOM },
-  { ax: 210, ay: 220, bx: 470, by: 220 },
-  { ax: 350, ay: 440, bx: 790, by: 440 },
-  { ax: COURSE_LEFT, ay: 660, bx: 500, by: 660 },
-  { ax: 350, ay: 880, bx: 790, by: 880 },
-  { ax: 210, ay: 1090, bx: 620, by: 1090 },
+const PIPE_POINTS: Point[] = [
+  { x: 140, y: 160 },
+  { x: 710, y: 160 },
+  { x: 710, y: 360 },
+  { x: 170, y: 360 },
+  { x: 170, y: 560 },
+  { x: 700, y: 560 },
+  { x: 700, y: 760 },
+  { x: 170, y: 760 },
+  { x: 170, y: 960 },
+  { x: 700, y: 960 },
+  { x: 700, y: 1160 },
+  { x: 170, y: 1160 },
+  { x: 170, y: 1360 },
+  { x: 700, y: 1360 },
+  { x: 700, y: 1540 },
+  { x: 240, y: 1540 },
+  { x: 240, y: 1450 },
+  { x: 660, y: 1450 },
+  { x: 660, y: 1500 },
 ];
 
-const START_POINT: Point = { x: 120, y: 150 };
-const HOLE_POINT: Point = { x: 730, y: 180 };
+const START_POINT: Point = PIPE_POINTS[0];
+const HOLE_POINT: Point = PIPE_POINTS[PIPE_POINTS.length - 1];
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -53,12 +59,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function reflectVelocity(vx: number, vy: number, wall: Segment) {
-  const dx = wall.bx - wall.ax;
-  const dy = wall.by - wall.ay;
-  const length = Math.hypot(dx, dy) || 1;
-  const nx = -dy / length;
-  const ny = dx / length;
+function reflectVelocityByNormal(vx: number, vy: number, nx: number, ny: number) {
   const dot = vx * nx + vy * ny;
   return {
     vx: (vx - 2 * dot * nx) * 0.92,
@@ -66,23 +67,31 @@ function reflectVelocity(vx: number, vy: number, wall: Segment) {
   };
 }
 
-function pointToSegmentDistance(px: number, py: number, segment: Segment) {
-  const vx = segment.bx - segment.ax;
-  const vy = segment.by - segment.ay;
-  const wx = px - segment.ax;
-  const wy = py - segment.ay;
-  const c1 = vx * wx + vy * wy;
-  if (c1 <= 0) {
-    return Math.hypot(px - segment.ax, py - segment.ay);
-  }
+function closestPointOnSegment(point: Point, a: Point, b: Point): Point {
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
   const c2 = vx * vx + vy * vy;
-  if (c2 <= c1) {
-    return Math.hypot(px - segment.bx, py - segment.by);
+  if (c2 === 0) return a;
+  const t = clamp(((point.x - a.x) * vx + (point.y - a.y) * vy) / c2, 0, 1);
+  return { x: a.x + vx * t, y: a.y + vy * t };
+}
+
+function findClosestPointOnPipe(point: Point) {
+  let bestPoint = PIPE_POINTS[0];
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < PIPE_POINTS.length - 1; index += 1) {
+    const a = PIPE_POINTS[index];
+    const b = PIPE_POINTS[index + 1];
+    const candidate = closestPointOnSegment(point, a, b);
+    const d = distance(point, candidate);
+    if (d < bestDistance) {
+      bestDistance = d;
+      bestPoint = candidate;
+    }
   }
-  const t = c1 / c2;
-  const projX = segment.ax + t * vx;
-  const projY = segment.ay + t * vy;
-  return Math.hypot(px - projX, py - projY);
+
+  return { point: bestPoint, distance: bestDistance };
 }
 
 export default function SpotDifferencePage() {
@@ -204,24 +213,21 @@ export default function SpotDifferencePage() {
       let nextX = prev.x + velocityRef.current.vx;
       let nextY = prev.y + velocityRef.current.vy;
 
-      if (nextX - BALL_RADIUS <= COURSE_LEFT || nextX + BALL_RADIUS >= COURSE_RIGHT) {
-        velocityRef.current.vx *= -0.92;
-        nextX = clamp(nextX, COURSE_LEFT + BALL_RADIUS, COURSE_RIGHT - BALL_RADIUS);
-      }
-      if (nextY - BALL_RADIUS <= COURSE_TOP || nextY + BALL_RADIUS >= COURSE_BOTTOM) {
-        velocityRef.current.vy *= -0.92;
-        nextY = clamp(nextY, COURSE_TOP + BALL_RADIUS, COURSE_BOTTOM - BALL_RADIUS);
-      }
+      const closest = findClosestPointOnPipe({ x: nextX, y: nextY });
+      const limit = PIPE_RADIUS - BALL_RADIUS;
+      if (closest.distance > limit) {
+        const nxRaw = nextX - closest.point.x;
+        const nyRaw = nextY - closest.point.y;
+        const nLen = Math.hypot(nxRaw, nyRaw) || 1;
+        const nx = nxRaw / nLen;
+        const ny = nyRaw / nLen;
 
-      for (const wall of WALLS.slice(4)) {
-        const dist = pointToSegmentDistance(nextX, nextY, wall);
-        if (dist <= BALL_RADIUS + 3) {
-          const reflected = reflectVelocity(velocityRef.current.vx, velocityRef.current.vy, wall);
-          velocityRef.current.vx = reflected.vx;
-          velocityRef.current.vy = reflected.vy;
-          nextX = prev.x + velocityRef.current.vx;
-          nextY = prev.y + velocityRef.current.vy;
-        }
+        const reflected = reflectVelocityByNormal(velocityRef.current.vx, velocityRef.current.vy, nx, ny);
+        velocityRef.current.vx = reflected.vx;
+        velocityRef.current.vy = reflected.vy;
+
+        nextX = closest.point.x + nx * limit;
+        nextY = closest.point.y + ny * limit;
       }
 
       velocityRef.current.vx *= FRICTION;
@@ -365,7 +371,7 @@ export default function SpotDifferencePage() {
             <svg
               ref={svgRef}
               viewBox={`0 0 ${COURSE_WIDTH} ${COURSE_HEIGHT}`}
-              className="h-[78vh] min-h-[620px] w-full touch-none select-none"
+              className="h-[85vh] min-h-[860px] w-full touch-none select-none"
               onMouseDown={(e) => beginDrag(e.clientX, e.clientY)}
               onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
               onMouseUp={endDrag}
@@ -380,29 +386,33 @@ export default function SpotDifferencePage() {
               }}
               onTouchEnd={endDrag}
             >
-              <rect
-                x={COURSE_LEFT}
-                y={COURSE_TOP}
-                width={COURSE_RIGHT - COURSE_LEFT}
-                height={COURSE_BOTTOM - COURSE_TOP}
-                rx="28"
-                fill="rgba(22,163,74,0.18)"
-                stroke="rgba(255,255,255,0.18)"
-                strokeWidth="10"
-              />
+              <rect x="0" y="0" width={COURSE_WIDTH} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
 
-              {WALLS.slice(4).map((wall, index) => (
-                <line
-                  key={`${wall.ax}-${wall.ay}-${index}`}
-                  x1={wall.ax}
-                  y1={wall.ay}
-                  x2={wall.bx}
-                  y2={wall.by}
-                  stroke="rgba(226,232,240,0.9)"
-                  strokeWidth="12"
-                  strokeLinecap="round"
-                />
-              ))}
+              <polyline
+                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
+                fill="none"
+                stroke="rgba(30,41,59,0.95)"
+                strokeWidth={PIPE_RADIUS * 2 + 14}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
+                fill="none"
+                stroke="rgba(187,247,208,0.22)"
+                strokeWidth={PIPE_RADIUS * 2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points={PIPE_POINTS.map((point) => `${point.x},${point.y}`).join(' ')}
+                fill="none"
+                stroke="rgba(226,232,240,0.4)"
+                strokeWidth={8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="16 14"
+              />
 
               <circle cx={START_POINT.x} cy={START_POINT.y} r="22" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
               <text x={START_POINT.x} y={START_POINT.y + 7} textAnchor="middle" fontSize="22">🏁</text>
