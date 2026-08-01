@@ -563,15 +563,6 @@ export default function SpotDifferencePage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              <polyline
-                points={course.points.map((point) => `${point.x * xScale},${point.y}`).join(' ')}
-                fill="none"
-                stroke="rgba(187,247,208,0.12)"
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="10 14"
-              />
 
               <circle cx={course.start.x * xScale} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
               <circle cx={course.start.x * xScale} cy={course.start.y} r={BALL_HIT_RADIUS} fill="rgba(255,255,255,0.01)" />
