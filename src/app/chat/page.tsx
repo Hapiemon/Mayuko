@@ -26,11 +26,14 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
   const [replyTarget, setReplyTarget] = useState<{ id: number; sender: string; content: string } | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const messageItemRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldScrollOnLoginRef = useRef(false);
+  const highlightTimerRef = useRef<number | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
@@ -340,6 +343,23 @@ export default function ChatPage() {
     } catch {}
   };
 
+  const jumpToMessage = (messageId: number) => {
+    const target = messageItemRefs.current[messageId];
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightedMessageId(messageId);
+
+    if (highlightTimerRef.current) {
+      window.clearTimeout(highlightTimerRef.current);
+    }
+
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightTimerRef.current = null;
+    }, 1800);
+  };
+
   const scrollToBottom = () => {
     if (!messagesRef.current) return;
     try {
@@ -390,6 +410,14 @@ export default function ChatPage() {
       el.style.height = Math.min(el.scrollHeight, 440) + 'px';
     }
   }, [inputText]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
 
   if (!currentUser) {
     return null;
@@ -464,7 +492,13 @@ export default function ChatPage() {
 
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {messages.map((m) => (
-          <div key={m.id} className={`flex flex-col ${m.sender === currentUser ? 'items-end' : 'items-start'}`}>
+          <div
+            key={m.id}
+            ref={(el) => {
+              messageItemRefs.current[m.id] = el;
+            }}
+            className={`flex flex-col rounded-xl transition-all duration-300 ${m.sender === currentUser ? 'items-end' : 'items-start'} ${highlightedMessageId === m.id ? 'bg-yellow-100/80 ring-2 ring-yellow-300 ring-offset-2' : ''}`}
+          >
             <span className={`text-xs font-semibold mb-1 ${m.sender === currentUser ? 'text-right text-violet-500' : 'text-left text-gray-500'}`}>{m.sender}</span>
             <div
               role="button"
@@ -490,10 +524,19 @@ export default function ChatPage() {
                 />
               )}
               {m.reply_to_id && (
-                <div className="mb-2 rounded-lg border-l-2 border-gray-300 bg-white/70 px-2 py-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (m.reply_to_id) {
+                      jumpToMessage(m.reply_to_id);
+                    }
+                  }}
+                  className="mb-2 block w-full rounded-lg border-l-2 border-gray-300 bg-white/70 px-2 py-1 text-left transition-colors hover:bg-white"
+                >
                   <p className="text-[11px] font-semibold text-gray-600">{m.reply_to_sender}</p>
                   <p className="text-[11px] text-gray-600 break-words">{m.reply_to_content}</p>
-                </div>
+                </button>
               )}
               {m.content && <p className={`whitespace-pre-wrap break-words ${fontSizeClass}`}>{m.content}</p>}
               {m.media_url && m.media_type === 'image' && (
