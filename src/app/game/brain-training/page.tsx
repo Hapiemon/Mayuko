@@ -9,6 +9,14 @@ interface Card {
   id: number;
   value: string;
   isMatched: boolean;
+  isFree?: boolean;
+}
+
+interface RankingRow {
+  user_name: string;
+  game_type: string;
+  best_value: number;
+  extra_value: number;
 }
 
 const LEVEL_CONFIG: Record<number, { size: number; label: string }> = {
@@ -42,21 +50,24 @@ function generateDeck(level: number): { cards: Card[]; gridSize: number } {
   const totalSlots = gridSize * gridSize;
   const pairCount = Math.floor(totalSlots / 2);
   const selected = shuffle(EMOJIS).slice(0, pairCount);
-  const oddCard = selected[Math.floor(Math.random() * selected.length)] ?? '🍀';
 
-  const values: string[] = [];
+  const values: Array<{ value: string; isMatched: boolean; isFree?: boolean }> = [];
   selected.forEach((emoji) => {
-    values.push(emoji, emoji);
+    values.push(
+      { value: emoji, isMatched: false },
+      { value: emoji, isMatched: false },
+    );
   });
 
   if (totalSlots % 2 === 1) {
-    values.push(oddCard);
+    values.push({ value: '★', isMatched: true, isFree: true });
   }
 
-  const cards = shuffle(values).map((value, index) => ({
+  const cards = shuffle(values).map((item, index) => ({
     id: index,
-    value,
-    isMatched: false,
+    value: item.value,
+    isMatched: item.isMatched,
+    isFree: item.isFree,
   }));
 
   return { cards, gridSize };
@@ -71,11 +82,16 @@ export default function BrainTrainingPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [openedIndices, setOpenedIndices] = useState<number[]>([]);
   const [lockBoard, setLockBoard] = useState(false);
-  const [turnCount, setTurnCount] = useState(0);
+  const [flippedCount, setFlippedCount] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [totalPairs, setTotalPairs] = useState(0);
   const [message, setMessage] = useState('レベルを選んで開始してください');
   const [saved, setSaved] = useState(false);
+  const [bestScore, setBestScore] = useState(0);
+  const [resultScore, setResultScore] = useState(0);
+  const [resultBestScore, setResultBestScore] = useState(0);
+  const [isNewBest, setIsNewBest] = useState(false);
+  const [resultTitle, setResultTitle] = useState('');
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -86,7 +102,27 @@ export default function BrainTrainingPage() {
     setCurrentUser(user);
   }, [router]);
 
-  const score = useMemo(() => matchedPairs * 2, [matchedPairs]);
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchBestScore = async () => {
+      try {
+        const res = await fetch('/api/game-rankings');
+        if (!res.ok) {
+          throw new Error('Failed to fetch rankings');
+        }
+        const data = (await res.json()) as RankingRow[];
+        const myRow = data.find((row) => row.user_name === currentUser && row.game_type === 'brain_training');
+        setBestScore(Number(myRow?.best_value ?? 0));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchBestScore();
+  }, [currentUser]);
+
+  const score = useMemo(() => flippedCount, [flippedCount]);
   const isAllMatched = useMemo(() => matchedPairs >= totalPairs && totalPairs > 0, [matchedPairs, totalPairs]);
 
   const startLevel = (selectedLevel: number) => {
@@ -96,10 +132,14 @@ export default function BrainTrainingPage() {
     setCards(generated.cards);
     setOpenedIndices([]);
     setLockBoard(false);
-    setTurnCount(0);
+    setFlippedCount(0);
     setMatchedPairs(0);
     setTotalPairs(Math.floor((generated.gridSize * generated.gridSize) / 2));
     setSaved(false);
+    setResultScore(0);
+    setResultBestScore(bestScore);
+    setIsNewBest(false);
+    setResultTitle('');
     setPhase('memorize');
     setMessage('盤面を覚えてください。「覚えた」を押すとスタートします。');
   };
@@ -114,14 +154,26 @@ export default function BrainTrainingPage() {
           userName: currentUser,
           gameType: 'brain_training',
           cumulativeDelta: finalScore,
-          bestValue: bestLevel,
-          extraValue: turnCount,
+          bestValue: finalScore,
+          extraValue: bestLevel,
         }),
       });
+      setBestScore((prev) => Math.max(prev, finalScore));
       setSaved(true);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const finishGame = async (title: string, finalScore: number) => {
+    const nextBestScore = Math.max(bestScore, finalScore);
+    setPhase('finished');
+    setResultTitle(title);
+    setResultScore(finalScore);
+    setResultBestScore(nextBestScore);
+    setIsNewBest(finalScore > bestScore);
+    setMessage(title);
+    await saveResult(finalScore, level ?? 1);
   };
 
   const handleRemembered = () => {
@@ -136,13 +188,15 @@ export default function BrainTrainingPage() {
     if (!card || card.isMatched) return;
     if (openedIndices.includes(index)) return;
 
+    const nextScore = flippedCount + 1;
+    setFlippedCount(nextScore);
+
     const nextOpened = [...openedIndices, index];
     setOpenedIndices(nextOpened);
 
     if (nextOpened.length < 2) return;
 
     setLockBoard(true);
-    setTurnCount((prev) => prev + 1);
 
     const [firstIndex, secondIndex] = nextOpened;
     const first = cards[firstIndex];
@@ -160,20 +214,12 @@ export default function BrainTrainingPage() {
       setMessage('ナイス！ペア一致です。');
 
       if (nextMatchedPairs >= totalPairs && totalPairs > 0) {
-        const finalScore = nextMatchedPairs * 2;
-        setPhase('finished');
-        setMessage('全ペア達成！おめでとうございます。');
-        const bestLevel = level ?? 1;
-        saveResult(finalScore, bestLevel);
+        finishGame('全ペア達成！おめでとうございます。', nextScore);
       }
       return;
     }
 
-    setMessage('不一致。もう一度覚えて挑戦！');
-    window.setTimeout(() => {
-      setOpenedIndices([]);
-      setLockBoard(false);
-    }, 650);
+    finishGame('不一致でゲームオーバーです。', nextScore);
   };
 
   const resetToLevelSelect = () => {
@@ -183,10 +229,14 @@ export default function BrainTrainingPage() {
     setCards([]);
     setOpenedIndices([]);
     setLockBoard(false);
-    setTurnCount(0);
+    setFlippedCount(0);
     setMatchedPairs(0);
     setTotalPairs(0);
     setSaved(false);
+    setResultScore(0);
+    setResultBestScore(bestScore);
+    setIsNewBest(false);
+    setResultTitle('');
     setMessage('レベルを選んで開始してください');
   };
 
@@ -218,7 +268,7 @@ export default function BrainTrainingPage() {
             </div>
             <div className="text-right text-sm text-white/80">
               <p>レベル: {level ? `${level} (${LEVEL_CONFIG[level].label})` : '-'}</p>
-              <p>ターン数: {turnCount}</p>
+              <p>最高スコア: {bestScore}</p>
               <p>ペア: {matchedPairs}/{totalPairs}</p>
             </div>
           </div>
@@ -267,6 +317,26 @@ export default function BrainTrainingPage() {
                 })}
               </div>
 
+              {phase === 'finished' && (
+                <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-5">
+                  <p className="text-sm text-cyan-200">結果</p>
+                  <h2 className="mt-2 text-2xl font-bold">{resultTitle}</h2>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-white/10 px-4 py-3">
+                      <p className="text-xs text-white/70">今回のスコア</p>
+                      <p className="mt-1 text-2xl font-black">{resultScore}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/10 px-4 py-3">
+                      <p className="text-xs text-white/70">最高スコア</p>
+                      <p className="mt-1 text-2xl font-black">{resultBestScore}</p>
+                    </div>
+                  </div>
+                  {isNewBest && (
+                    <p className="mt-3 text-sm font-semibold text-emerald-300">新記録を更新しました。</p>
+                  )}
+                </div>
+              )}
+
               <div className="mt-5 flex flex-wrap gap-2">
                 {phase === 'memorize' && (
                   <button
@@ -280,14 +350,14 @@ export default function BrainTrainingPage() {
                   onClick={resetToLevelSelect}
                   className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold hover:bg-white/20"
                 >
-                  レベル選択へ
+                  レベル選択画面へ
                 </button>
                 {phase === 'finished' && (
                   <button
-                    onClick={() => router.push('/game')}
+                    onClick={resetToLevelSelect}
                     className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
                   >
-                    結果を見る
+                    レベル選択画面へ戻る
                   </button>
                 )}
               </div>

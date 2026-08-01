@@ -13,6 +13,30 @@ interface RankingRow {
   extra_value: number;
 }
 
+function renderRankingSummary(row: RankingRow, gameType: string) {
+  if (gameType === 'millionaire') {
+    return {
+      total: `累計: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
+      best: `最高到達: ${row.best_value}`,
+      extra: `クリア回数: ${row.extra_value}`,
+    };
+  }
+
+  if (gameType === 'brain_training') {
+    return {
+      total: `累計: ${row.cumulative_value}`,
+      best: `最高スコア: ${row.best_value}`,
+      extra: `最高Lv: ${row.extra_value}`,
+    };
+  }
+
+  return {
+    total: `累計: ${row.cumulative_value}`,
+    best: `ベスト: ${row.best_value}`,
+    extra: `補足: ${row.extra_value}`,
+  };
+}
+
 const GAME_LABELS: Record<string, string> = {
   millionaire: 'ミリオネア',
   brain_training: '脳トレ',
@@ -127,13 +151,11 @@ export default function GameHubPage() {
                         <div key={row.id} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-sm">
                           <div>
                             <p className="font-semibold">{index + 1}. {row.user_name}</p>
-                            <p className="text-white/60">
-                              累計: {key === 'millionaire' ? `¥${Number(row.cumulative_value).toLocaleString('ja-JP')}` : row.cumulative_value}
-                            </p>
+                            <p className="text-white/60">{renderRankingSummary(row, key).total}</p>
                           </div>
                           <div className="text-right text-xs text-white/70">
-                            <p>ベスト: {row.best_value}</p>
-                            <p>補足: {row.extra_value}</p>
+                            <p>{renderRankingSummary(row, key).best}</p>
+                            <p>{renderRankingSummary(row, key).extra}</p>
                           </div>
                         </div>
                       ))
