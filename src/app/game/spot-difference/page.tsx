@@ -25,13 +25,13 @@ const COURSE_LEFT = 80;
 const COURSE_TOP = 80;
 const COURSE_RIGHT = 780;
 const COURSE_BOTTOM = 1620;
-const BALL_RADIUS = 13;
-const HOLE_RADIUS = 22;
+const BALL_RADIUS = 18;
+const HOLE_RADIUS = 34;
 const FRICTION = 0.986;
 const MIN_POWER = 4;
 const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
-const PIPE_RADIUS = 42;
+const PIPE_RADIUS = 64;
 const GRID_COLS = 6;
 const GRID_ROWS = 14;
 const MIN_PATH_LENGTH = 34;
@@ -155,6 +155,14 @@ function generateRandomCourseLayout(): CourseLayout {
   };
 }
 
+function createInitialCourse() {
+  const generated = generateRandomCourseLayout();
+  return {
+    course: generated,
+    ball: generated.start,
+  };
+}
+
 function reflectVelocityByNormal(vx: number, vy: number, nx: number, ny: number) {
   const dot = vx * nx + vy * ny;
   return {
@@ -197,11 +205,9 @@ export default function SpotDifferencePage() {
   const velocityRef = useRef({ vx: 0, vy: 0 });
   const aimingStartRef = useRef<Point | null>(null);
   const [currentUser, setCurrentUser] = useState('');
-  const [course, setCourse] = useState<CourseLayout>(() => generateRandomCourseLayout());
-  const [ball, setBall] = useState<Point>(() => {
-    const initial = generateRandomCourseLayout();
-    return initial.start;
-  });
+  const initialCourse = useMemo(() => createInitialCourse(), []);
+  const [course, setCourse] = useState<CourseLayout>(initialCourse.course);
+  const [ball, setBall] = useState<Point>(initialCourse.ball);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPoint, setDragPoint] = useState<Point | null>(null);
   const [strokes, setStrokes] = useState(0);
@@ -266,17 +272,38 @@ export default function SpotDifferencePage() {
 
   const textSizeClass =
     messageFontSize === 'small'
-      ? 'text-xs'
+      ? 'text-sm'
       : messageFontSize === 'large'
-        ? 'text-3xl'
-        : 'text-sm';
+        ? 'text-4xl'
+        : 'text-lg';
 
   const secondaryTextSizeClass =
     messageFontSize === 'small'
-      ? 'text-xs'
+      ? 'text-sm'
       : messageFontSize === 'large'
-        ? 'text-2xl'
-        : 'text-sm';
+        ? 'text-3xl'
+        : 'text-base';
+
+  const fingerFontSize =
+    messageFontSize === 'small'
+      ? 54
+      : messageFontSize === 'large'
+        ? 98
+        : 74;
+
+  const noseFontSize =
+    messageFontSize === 'small'
+      ? 66
+      : messageFontSize === 'large'
+        ? 124
+        : 92;
+
+  const startFontSize =
+    messageFontSize === 'small'
+      ? 28
+      : messageFontSize === 'large'
+        ? 44
+        : 34;
 
   const canShoot = useMemo(() => !finished && Math.hypot(velocityRef.current.vx, velocityRef.current.vy) < SPEED_STOP_THRESHOLD, [finished, ball]);
 
@@ -510,15 +537,15 @@ export default function SpotDifferencePage() {
                 strokeLinejoin="round"
               />
 
-              <circle cx={course.start.x} cy={course.start.y} r="22" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
-              <text x={course.start.x} y={course.start.y + 7} textAnchor="middle" fontSize="22">🏁</text>
+              <circle cx={course.start.x} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
+              <text x={course.start.x} y={course.start.y + 10} textAnchor="middle" fontSize={startFontSize}>🏁</text>
 
-              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 6} fill="rgba(0,0,0,0.35)" />
-              <text x={course.hole.x} y={course.hole.y + 12} textAnchor="middle" fontSize={success ? '48' : '42'}>
+              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 10} fill="rgba(0,0,0,0.35)" />
+              <text x={course.hole.x} y={course.hole.y + 18} textAnchor="middle" fontSize={success ? noseFontSize + 10 : noseFontSize}>
                 👃
               </text>
               {success && (
-                <text x={course.hole.x - 6} y={course.hole.y + 15} textAnchor="middle" fontSize="30">
+                <text x={course.hole.x - 10} y={course.hole.y + 20} textAnchor="middle" fontSize={fingerFontSize}>
                   ☝️
                 </text>
               )}
@@ -537,7 +564,7 @@ export default function SpotDifferencePage() {
               )}
 
               {!success && (
-                <text x={ball.x} y={ball.y + 10} textAnchor="middle" fontSize="30">
+                <text x={ball.x} y={ball.y + 14} textAnchor="middle" fontSize={fingerFontSize}>
                   ☝️
                 </text>
               )}
@@ -546,15 +573,15 @@ export default function SpotDifferencePage() {
 
           {finished && (
             <div className="mt-5 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-5 text-center">
-              <p className="text-4xl font-black text-emerald-200 md:text-5xl">鼻ほじり成功！</p>
+              <p className="text-4xl font-black text-emerald-200 md:text-6xl">鼻ほじり成功！</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-white/10 px-4 py-4">
                   <p className={`${secondaryTextSizeClass} text-white/70`}>今回のスコア</p>
-                  <p className="mt-1 text-3xl font-black">{resultScore} 打</p>
+                  <p className="mt-1 text-4xl font-black">{resultScore} 打</p>
                 </div>
                 <div className="rounded-xl bg-white/10 px-4 py-4">
                   <p className={`${secondaryTextSizeClass} text-white/70`}>最高スコア</p>
-                  <p className="mt-1 text-3xl font-black">{resultBestScore} 打</p>
+                  <p className="mt-1 text-4xl font-black">{resultBestScore} 打</p>
                 </div>
               </div>
               {isNewBest && <p className={`mt-4 font-semibold text-amber-300 ${secondaryTextSizeClass}`}>最短打数を更新しました！</p>}
