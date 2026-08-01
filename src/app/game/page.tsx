@@ -92,9 +92,9 @@ export default function GameHubPage() {
             <p className="mt-3 text-sm text-white/80">50:50・テレフォン・セイフティを使って全15段を突破。</p>
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
-            <p className="text-sm text-cyan-200">計算と判断の10ラウンド</p>
+            <p className="text-sm text-cyan-200">レベル制の神経衰弱</p>
             <h2 className="mt-2 text-2xl font-bold">🧠 脳トレ</h2>
-            <p className="mt-3 text-sm text-white/80">3択の計算問題を連続で解いてスコアと連勝数を伸ばす。</p>
+            <p className="mt-3 text-sm text-white/80">4×4〜8×8の盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
             <p className="text-sm text-emerald-200">タップで探す全7ステージ</p>
