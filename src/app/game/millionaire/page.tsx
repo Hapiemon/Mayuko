@@ -20,6 +20,7 @@ const PRIZE_LADDER = [10000, 20000, 30000, 50000, 100000, 150000, 250000, 500000
 const CHOICE_LABELS = ['A', 'B', 'C', 'D'] as const;
 const FIRST_SAFETY_NET = 100000;
 const SECOND_SAFETY_NET = 1000000;
+const MINOMONTA_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220"><rect width="220" height="220" rx="36" fill="#f59e0b"/><circle cx="110" cy="95" r="58" fill="#fcd29f"/><circle cx="88" cy="92" r="6" fill="#111827"/><circle cx="132" cy="92" r="6" fill="#111827"/><path d="M82 120c12 14 44 14 56 0" stroke="#111827" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="62" y="32" width="96" height="28" rx="14" fill="#1f2937"/><text x="110" y="52" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#fef3c7">みのもんた</text></svg>`)}`;
 
 type MillionaireRanking = {
   cumulative_value: number;
@@ -32,6 +33,17 @@ type LifelineState = {
   phoneUsed: boolean;
   safetyUsed: boolean;
   safetyArmed: boolean;
+};
+
+type ResultModalState = {
+  open: boolean;
+  title: string;
+  body: string;
+  isSuccess: boolean;
+  primaryLabel: string;
+  primaryAction: 'next' | 'result' | 'retry' | 'close';
+  secondaryLabel?: string;
+  secondaryAction?: 'retry' | 'close';
 };
 
 export default function MillionairePage() {
@@ -52,6 +64,9 @@ export default function MillionairePage() {
   const [resultBestPrize, setResultBestPrize] = useState(0);
   const [resultTotalPrize, setResultTotalPrize] = useState(0);
   const [resultCurrentPrize, setResultCurrentPrize] = useState(0);
+  const [confirmChoiceNumber, setConfirmChoiceNumber] = useState<number | null>(null);
+  const [selectedChoiceText, setSelectedChoiceText] = useState('');
+  const [resultModal, setResultModal] = useState<ResultModalState>({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -211,30 +226,49 @@ export default function MillionairePage() {
     setResultTotalPrize(result.totalPrize);
   };
 
-  const handleAnswer = async (choiceNumber: number) => {
+  const openConfirm = (choiceNumber: number) => {
     if (!currentQuestion || finished || answeredStage === currentStage) return;
+    const selected = visibleChoices.find((choice) => choice.number === choiceNumber);
+    setConfirmChoiceNumber(choiceNumber);
+    setSelectedChoiceText(selected?.text ?? '');
+  };
 
+  const handleFinalAnswer = async () => {
+    if (!currentQuestion || confirmChoiceNumber === null || finished || answeredStage === currentStage) return;
+
+    const choiceNumber = confirmChoiceNumber;
+    setConfirmChoiceNumber(null);
     setAnsweredStage(currentStage);
     const isCorrect = choiceNumber === currentQuestion.answer_index;
 
     if (isCorrect) {
       const prize = currentQuestion.prize_amount ?? currentPrizeValue;
+      setWonPrize(prize);
+
       if (currentStage === 14 || currentStage === stageQuestions.length - 1) {
         await finishGame('🎉 全問正解でクリア！', prize, true);
+        setResultModal({
+          open: true,
+          title: '🎉 全問正解でクリア！',
+          body: `¥${new Intl.NumberFormat('ja-JP').format(prize)}を獲得しました。`,
+          isSuccess: true,
+          primaryLabel: '結果を見る',
+          primaryAction: 'result',
+          secondaryLabel: 'もう一度挑戦',
+          secondaryAction: 'retry',
+        });
         return;
       }
 
-      setWonPrize(prize);
-      if (stageNumber >= 12) {
-        setStatus(`正解！ ¥${new Intl.NumberFormat('ja-JP').format(prize)}獲得。この${new Intl.NumberFormat('ja-JP').format(prize)}円にはもう戻れません。みのもんたが小切手を破りました… 次の問題へ。`);
-      } else {
-        setStatus(`正解！ ¥${new Intl.NumberFormat('ja-JP').format(prize)}獲得。次の問題へ。`);
-      }
-      window.setTimeout(() => {
-        setCurrentStage((prev) => prev + 1);
-        setHiddenChoices([]);
-        setAnsweredStage(null);
-      }, 900);
+      setStatus(`正解！ ¥${new Intl.NumberFormat('ja-JP').format(prize)}獲得。`);
+      setResultModal({
+        open: true,
+        title: '正解！',
+        body: `¥${new Intl.NumberFormat('ja-JP').format(prize)}を獲得しました。`,
+        isSuccess: true,
+        primaryLabel: '次の問題へ',
+        primaryAction: 'next',
+      });
       return;
     }
 
@@ -242,6 +276,14 @@ export default function MillionairePage() {
       setLifelines((prev) => ({ ...prev, safetyArmed: false, safetyUsed: true }));
       setAnsweredStage(null);
       setStatus('セイフティ発動！ 1回だけ復活しました。もう一度答えてください。');
+      setResultModal({
+        open: true,
+        title: 'セイフティ発動！',
+        body: '1回だけ復活しました。もう一度答えてください。',
+        isSuccess: false,
+        primaryLabel: '閉じる',
+        primaryAction: 'close',
+      });
       return;
     }
 
@@ -250,6 +292,16 @@ export default function MillionairePage() {
       safePrize,
       false,
     );
+    setResultModal({
+      open: true,
+      title: '不正解…',
+      body: `正解は ${getAnswerKey(currentQuestion)} でした。セーフティネットにより ¥${safePrize.toLocaleString('ja-JP')} です。`,
+      isSuccess: false,
+      primaryLabel: 'リザルト画面',
+      primaryAction: 'result',
+      secondaryLabel: 'もう一度挑戦',
+      secondaryAction: 'retry',
+    });
   };
 
   const handleDropout = async () => {
@@ -281,6 +333,9 @@ export default function MillionairePage() {
   };
 
   const restart = () => {
+    setConfirmChoiceNumber(null);
+    setSelectedChoiceText('');
+    setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
     const next = buildStageQuestions(allQuestions);
     setStageQuestions(next);
     setCurrentStage(0);
@@ -296,6 +351,36 @@ export default function MillionairePage() {
     setResultCurrentPrize(0);
   };
 
+  const handleModalPrimaryAction = () => {
+    if (resultModal.primaryAction === 'next') {
+      setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+      setCurrentStage((prev) => prev + 1);
+      setHiddenChoices([]);
+      setAnsweredStage(null);
+      return;
+    }
+
+    if (resultModal.primaryAction === 'retry') {
+      restart();
+      return;
+    }
+
+    if (resultModal.primaryAction === 'result') {
+      setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+      return;
+    }
+
+    setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+  };
+
+  const handleModalSecondaryAction = () => {
+    if (resultModal.secondaryAction === 'retry') {
+      restart();
+      return;
+    }
+    setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+  };
+
   if (!currentUser) {
     return null;
   }
@@ -306,7 +391,7 @@ export default function MillionairePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div>
             <p className="text-xs text-amber-200">GAME / MILLIONAIRE</p>
-            <h1 className="text-2xl font-bold">クイズミリオネア</h1>
+            <h1 className="text-xl font-bold">クイズ$ミリオネア</h1>
           </div>
           <div className="flex gap-2">
             <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキング</button>
@@ -340,12 +425,12 @@ export default function MillionairePage() {
                 <h2 className="mt-4 text-xl font-bold leading-relaxed md:text-2xl">{currentQuestion.question}</h2>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="mt-5 grid grid-cols-2 gap-3">
                 {visibleChoices.map((choice) => (
                   <button
                     key={choice.number}
                     disabled={choice.hidden || finished}
-                    onClick={() => handleAnswer(choice.number)}
+                    onClick={() => openConfirm(choice.number)}
                     className={`rounded-2xl border px-4 py-4 text-left transition ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : 'border-blue-300/30 bg-blue-500/10 hover:border-amber-300/60 hover:bg-amber-500/15'}`}
                   >
                     <p className="text-xs text-amber-200">{choice.label}</p>
@@ -377,12 +462,14 @@ export default function MillionairePage() {
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">50:50</button>
-            <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">テレフォン</button>
-            <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className="rounded-full bg-fuchsia-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">セイフティ</button>
-            <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className="rounded-full bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">ドロップアウト</button>
-            <button onClick={restart} disabled={allQuestions.length === 0} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20 disabled:opacity-40">最初から</button>
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-semibold text-amber-200">ライフラインを使用する</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">50:50</button>
+              <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">テレフォン</button>
+              <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className="rounded-full bg-fuchsia-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">セイフティ</button>
+              <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className="rounded-full bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">ドロップアウト</button>
+            </div>
           </div>
 
           {finished && (
@@ -441,6 +528,42 @@ export default function MillionairePage() {
           </div>
         </aside>
       </main>
+
+      {confirmChoiceNumber !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] border border-amber-300/30 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/20">
+            <button onClick={() => setConfirmChoiceNumber(null)} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
+            <div className="flex justify-center">
+              <img src={MINOMONTA_IMAGE} alt="みのもんた" className="h-28 w-28 rounded-full border border-amber-300/30 object-cover" />
+            </div>
+            <h2 className="mt-4 text-center text-2xl font-black text-amber-300">ファイナルアンサー？</h2>
+            <p className="mt-3 text-center text-sm leading-6 text-white/80">「{selectedChoiceText || '選択肢'}」で回答しますか？</p>
+            <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-center">
+              <p className="text-sm text-amber-200">この一手で勝敗が決まります</p>
+              <button onClick={handleFinalAnswer} className="mt-3 rounded-full bg-amber-400 px-5 py-2.5 text-lg font-black text-slate-950 hover:bg-amber-300">ファイナルアンサー</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resultModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/10">
+            <button onClick={handleModalPrimaryAction} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
+            <div className="flex justify-center">
+              <img src={MINOMONTA_IMAGE} alt="みのもんた" className="h-24 w-24 rounded-full border border-amber-300/30 object-cover" />
+            </div>
+            <h2 className={`mt-4 text-center text-2xl font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
+            <p className="mt-3 text-center text-sm leading-6 text-white/80">{resultModal.body}</p>
+            <div className="mt-5 flex flex-col gap-3">
+              <button onClick={handleModalPrimaryAction} className={`rounded-full px-5 py-3 text-base font-black ${resultModal.isSuccess ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-400 text-slate-950 hover:bg-rose-300'}`}>{resultModal.primaryLabel}</button>
+              {resultModal.secondaryLabel && (
+                <button onClick={handleModalSecondaryAction} className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-base font-semibold text-white hover:bg-white/20">{resultModal.secondaryLabel}</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

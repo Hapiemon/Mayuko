@@ -58,8 +58,8 @@ function renderRankingSummary(row: RankingRow, gameType: RankingGroupKey) {
 }
 
 const GAME_LABELS: Record<string, string> = {
-  millionaire_total: 'ミリオネア 総獲得金額',
-  millionaire_best: 'ミリオネア 最高獲得金額',
+  millionaire_total: 'クイズ$ミリオネア 総獲得金額',
+  millionaire_best: 'クイズ$ミリオネア 最高獲得金額',
   brain_training: '脳トレ',
   spot_difference: '鼻ほじり',
 };
@@ -197,7 +197,7 @@ export default function GameHubPage() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="grid gap-4 md:grid-cols-3">
           <Link href="/game/millionaire" className="rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5 shadow-lg shadow-amber-500/10 transition hover:-translate-y-1 hover:bg-amber-400/15">
-            <h2 className="mt-2 text-2xl font-bold">クイズミリオネア</h2>
+            <h2 className="mt-2 text-2xl font-bold">クイズ$ミリオネア</h2>
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
             <h2 className="mt-2 text-2xl font-bold">神経衰弱</h2>
