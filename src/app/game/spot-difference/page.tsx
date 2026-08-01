@@ -467,7 +467,6 @@ export default function SpotDifferencePage() {
             </div>
             <div className={`text-right text-white/80 ${secondaryTextSizeClass}`}>
               <p>最短打数: {bestScore === 0 ? '-' : bestScore}</p>
-              <p>目安: 20打前後</p>
             </div>
           </div>
 
