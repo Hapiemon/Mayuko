@@ -32,6 +32,7 @@ const MIN_POWER = 4;
 const MAX_POWER = 34;
 const SPEED_STOP_THRESHOLD = 0.12;
 const PIPE_RADIUS = 64;
+const BALL_HIT_RADIUS = 104;
 const GRID_COLS = 6;
 const GRID_ROWS = 14;
 const MIN_PATH_LENGTH = 34;
@@ -400,14 +401,18 @@ export default function SpotDifferencePage() {
     };
   };
 
-  const beginDrag = (clientX: number, clientY: number) => {
+  const beginDragPoint = (point: Point) => {
     if (!canShoot) return;
-    const point = getSvgPoint(clientX, clientY);
-    if (!point) return;
-    if (distance(point, ball) > 40) return;
+    if (distance(point, ball) > BALL_HIT_RADIUS) return;
     aimingStartRef.current = ball;
     setIsDragging(true);
     setDragPoint(point);
+  };
+
+  const beginDrag = (clientX: number, clientY: number) => {
+    const point = getSvgPoint(clientX, clientY);
+    if (!point) return;
+    beginDragPoint(point);
   };
 
   const moveDrag = (clientX: number, clientY: number) => {
@@ -415,6 +420,29 @@ export default function SpotDifferencePage() {
     const point = getSvgPoint(clientX, clientY);
     if (!point) return;
     setDragPoint(point);
+  };
+
+  const beginPointerDrag = (event: React.PointerEvent<SVGSVGElement>) => {
+    const point = getSvgPoint(event.clientX, event.clientY);
+    if (!point) return;
+    beginDragPoint(point);
+    if (isDragging) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const movePointerDrag = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (!isDragging) return;
+    const point = getSvgPoint(event.clientX, event.clientY);
+    if (!point) return;
+    setDragPoint(point);
+  };
+
+  const endPointerDrag = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    endDrag();
   };
 
   const endDrag = () => {
@@ -504,6 +532,10 @@ export default function SpotDifferencePage() {
               ref={svgRef}
               viewBox={`0 0 ${COURSE_WIDTH} ${COURSE_HEIGHT}`}
               className="h-[85vh] min-h-[860px] w-full touch-none select-none"
+              onPointerDown={beginPointerDrag}
+              onPointerMove={movePointerDrag}
+              onPointerUp={endPointerDrag}
+              onPointerCancel={endPointerDrag}
               onMouseDown={(e) => beginDrag(e.clientX, e.clientY)}
               onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
               onMouseUp={endDrag}
@@ -538,9 +570,11 @@ export default function SpotDifferencePage() {
               />
 
               <circle cx={course.start.x} cy={course.start.y} r="32" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
+              <circle cx={course.start.x} cy={course.start.y} r={BALL_HIT_RADIUS} fill="rgba(255,255,255,0.01)" />
               <text x={course.start.x} y={course.start.y + 10} textAnchor="middle" fontSize={startFontSize}>🏁</text>
 
               <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 10} fill="rgba(0,0,0,0.35)" />
+              <circle cx={course.hole.x} cy={course.hole.y} r={HOLE_RADIUS + 40} fill="rgba(255,255,255,0.01)" />
               <text x={course.hole.x} y={course.hole.y + 18} textAnchor="middle" fontSize={success ? noseFontSize + 10 : noseFontSize}>
                 👃
               </text>
