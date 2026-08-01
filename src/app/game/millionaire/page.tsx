@@ -232,8 +232,8 @@ export default function MillionairePage() {
             <h1 className="text-2xl font-bold">クイズミリオネア</h1>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキングへ</button>
-            <button onClick={() => router.push('/chat')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400">チャットへ</button>
+            <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキング</button>
+            <button onClick={() => router.push('/chat')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400">チャット</button>
           </div>
         </div>
       </header>
