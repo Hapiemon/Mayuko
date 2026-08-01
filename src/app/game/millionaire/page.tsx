@@ -163,6 +163,7 @@ export default function MillionairePage() {
   const stageNumber = currentStage + 1;
   const currentPrizeValue = PRIZE_LADDER[currentStage] ?? 0;
   const safePrize = wonPrize >= SECOND_SAFETY_NET ? SECOND_SAFETY_NET : wonPrize >= FIRST_SAFETY_NET ? FIRST_SAFETY_NET : 0;
+  const isModalOpen = confirmChoiceNumber !== null || resultModal.open;
 
   const getAnswerKey = (question: QuizQuestion) => question.answer_key ?? CHOICE_LABELS[(question.answer_index - 1) as 0 | 1 | 2 | 3];
 
@@ -383,21 +384,22 @@ export default function MillionairePage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#312e81,_#0f172a_55%,_#020617)] text-white">
-      <header className="border-b border-amber-400/20 bg-black/30 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-xs text-amber-200">GAME / MILLIONAIRE</p>
-            <h1 className="text-xl font-bold">クイズ$ミリオネア</h1>
+      <div className={isModalOpen ? 'pointer-events-none select-none' : ''}>
+        <header className="border-b border-amber-400/20 bg-black/30 backdrop-blur">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+            <div>
+              <p className="text-xs text-amber-200">GAME / MILLIONAIRE</p>
+              <h1 className="text-xl font-bold">クイズ$ミリオネア</h1>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキング</button>
+              <button onClick={() => router.push('/chat')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400">チャット</button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキング</button>
-            <button onClick={() => router.push('/chat')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400">チャット</button>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1.5fr_0.8fr]">
-        <section className="rounded-[2rem] border border-amber-300/20 bg-slate-950/70 p-6 shadow-2xl shadow-amber-500/10 backdrop-blur">
+        <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1.5fr_0.8fr]">
+          <section className="rounded-[2rem] border border-amber-300/20 bg-slate-950/70 p-6 shadow-2xl shadow-amber-500/10 backdrop-blur">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-amber-200">現在獲得済み賞金</p>
@@ -492,30 +494,31 @@ export default function MillionairePage() {
               </div>
             </div>
           )}
-        </section>
+          </section>
 
-        <aside className="space-y-4">
-          <div className="rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur">
-            <p className="text-sm text-white/60">賞金ラダー</p>
-            <ol className="mt-3 space-y-2 text-sm">
-              {[...PRIZE_LADDER].reverse().map((prize, index) => {
-                const originalIndex = PRIZE_LADDER.length - 1 - index;
-                const active = currentStage === originalIndex && !finished;
-                const cleared = wonPrize >= prize;
-                const isSafetyNet = prize === FIRST_SAFETY_NET || prize === SECOND_SAFETY_NET;
-                return (
-                  <li key={prize} className={`rounded-xl px-3 py-2 ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span>{originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}</span>
-                      {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">セーフティ</span>}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        </aside>
-      </main>
+          <aside className="space-y-4">
+            <div className="rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur">
+              <p className="text-sm text-white/60">賞金ラダー</p>
+              <ol className="mt-3 space-y-2 text-sm">
+                {[...PRIZE_LADDER].reverse().map((prize, index) => {
+                  const originalIndex = PRIZE_LADDER.length - 1 - index;
+                  const active = currentStage === originalIndex && !finished;
+                  const cleared = wonPrize >= prize;
+                  const isSafetyNet = prize === FIRST_SAFETY_NET || prize === SECOND_SAFETY_NET;
+                  return (
+                    <li key={prize} className={`rounded-xl px-3 py-2 ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}</span>
+                        {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">セーフティ</span>}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </aside>
+        </main>
+      </div>
 
       {confirmChoiceNumber !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
