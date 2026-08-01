@@ -142,6 +142,8 @@ export default function SpotDifferencePage() {
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgWidth, setSvgWidth] = useState(BASE_COURSE_WIDTH);
+  const trailRef = useRef<Point[]>([]);
+  const speedRef = useRef(0);
 
   useEffect(() => {
     setBall(course.start);
@@ -302,6 +304,10 @@ export default function SpotDifferencePage() {
         velocityRef.current.vy *= ratio;
       }
 
+      // トレイル・速度を更新
+      speedRef.current = newSpeed;
+      trailRef.current = [...trailRef.current.slice(-6), { x: prev.x, y: prev.y }];
+
       if (distance({ x: nextX, y: nextY }, course.hole) <= HOLE_RADIUS) {
         velocityRef.current.vx = 0;
         velocityRef.current.vy = 0;
@@ -314,6 +320,8 @@ export default function SpotDifferencePage() {
       if (Math.hypot(velocityRef.current.vx, velocityRef.current.vy) <= SPEED_STOP_THRESHOLD) {
         velocityRef.current.vx = 0;
         velocityRef.current.vy = 0;
+        speedRef.current = 0;
+        trailRef.current = [];
         if (animationRef.current) {
           cancelAnimationFrame(animationRef.current);
           animationRef.current = null;
@@ -422,6 +430,8 @@ export default function SpotDifferencePage() {
       animationRef.current = null;
     }
     velocityRef.current = { vx: 0, vy: 0 };
+    trailRef.current = [];
+    speedRef.current = 0;
     const nextCourse = buildFixedCourseLayout();
     setCourse(nextCourse);
     setBall(nextCourse.start);
@@ -498,6 +508,31 @@ export default function SpotDifferencePage() {
               }}
               onTouchEnd={endDrag}
             >
+              {/* SVGフィルター定義 */}
+              <defs>
+                {/* 白い発光（移動時） */}
+                <filter id="glow-white" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur stdDeviation="10" result="blur1" />
+                  <feGaussianBlur stdDeviation="20" result="blur2" />
+                  <feMerge>
+                    <feMergeNode in="blur2" />
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                {/* 超強い発光（高速時） */}
+                <filter id="glow-intense" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="6" result="tight" />
+                  <feGaussianBlur stdDeviation="18" result="mid" />
+                  <feGaussianBlur stdDeviation="36" result="wide" />
+                  <feMerge>
+                    <feMergeNode in="wide" />
+                    <feMergeNode in="mid" />
+                    <feMergeNode in="tight" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
               <rect x="0" y="0" width={svgWidth} height={COURSE_HEIGHT} fill="rgba(2,6,23,0.58)" />
 
               <polyline
@@ -554,11 +589,45 @@ export default function SpotDifferencePage() {
                 />
               )}
 
-              {!success && (
-                <text x={ball.x * xScale} y={ball.y + 14} textAnchor="middle" fontSize={fingerFontSize}>
-                  ☝️
-                </text>
-              )}
+              {!success && (() => {
+                const spd = speedRef.current;
+                const isMoving = spd > SPEED_STOP_THRESHOLD;
+                const isFast = spd > 14;
+                const filterId = isFast ? 'glow-intense' : isMoving ? 'glow-white' : undefined;
+                const scale = isFast ? 1.28 : isMoving ? 1.1 : 1.0;
+                const trail = trailRef.current;
+                return (
+                  <>
+                    {/* 残像トレイル */}
+                    {isMoving && trail.map((pt, i) => {
+                      const t = (i + 1) / trail.length;
+                      return (
+                        <text
+                          key={i}
+                          x={pt.x * xScale}
+                          y={pt.y + 14}
+                          textAnchor="middle"
+                          fontSize={fingerFontSize * (0.45 + t * 0.45)}
+                          opacity={t * 0.55}
+                          style={{ filter: i >= trail.length - 2 ? 'url(#glow-white)' : undefined }}
+                        >
+                          ☝️
+                        </text>
+                      );
+                    })}
+                    {/* メイン指 */}
+                    <text
+                      x={ball.x * xScale}
+                      y={ball.y + 14}
+                      textAnchor="middle"
+                      fontSize={fingerFontSize * scale}
+                      style={filterId ? { filter: `url(#${filterId})` } : undefined}
+                    >
+                      ☝️
+                    </text>
+                  </>
+                );
+              })()}
             </svg>
             );
             })()}
