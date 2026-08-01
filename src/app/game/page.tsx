@@ -162,11 +162,11 @@ export default function GameHubPage() {
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
             <h2 className="mt-2 text-2xl font-bold">神経衰弱</h2>
-            <p className={`mt-3 text-white/80 ${textSizeClass}`}>盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>盤面を暗記して、裏返し後にペアを揃える。<br />めくれた枚数がスコア。</p>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
             <h2 className="mt-2 text-2xl font-bold">鼻ほじり</h2>
-            <p className={`mt-3 text-white/80 ${textSizeClass}`}>「指」を飛ばしてに「鼻」をほじろう！少ない打数ほどランキング上位。</p>
+            <p className={`mt-3 text-white/80 ${textSizeClass}`}>「指」を飛ばしてに「鼻」をほじろう！<br />少ない打数ほどランキング上位。</p>
           </Link>
         </section>
 
