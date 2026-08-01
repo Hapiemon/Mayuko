@@ -28,8 +28,8 @@ const BALL_RADIUS = 18;
 const HOLE_RADIUS = 34;
 // 基本摩擦係数（線形減速）
 const FRICTION = 0.984;
-// 速度に比例した追加抵抗係数（加速度的減速）
-const QUADRATIC_DRAG = 0.007;
+// 毎フレームの一定減速量（低速ほど素早く止まる）
+const DECELERATION = 0.18;
 // 最大発射パワー
 const MAX_POWER = 44;
 const SPEED_STOP_THRESHOLD = 0.12;
@@ -293,11 +293,14 @@ export default function SpotDifferencePage() {
         nextY = closest.point.y + ny * limit;
       }
 
-      // 速度依存摩擦: 高速時ほど強く減速する（加速度的減速）
+      // 速度依存摩擦: 一定量を速度から引く（低速ほど素早く止まる）
       const speed = Math.hypot(velocityRef.current.vx, velocityRef.current.vy);
-      const dynamicFriction = Math.max(FRICTION - QUADRATIC_DRAG * speed, 0.72);
-      velocityRef.current.vx *= dynamicFriction;
-      velocityRef.current.vy *= dynamicFriction;
+      const newSpeed = Math.max(0, speed * FRICTION - DECELERATION);
+      if (speed > 0) {
+        const ratio = newSpeed / speed;
+        velocityRef.current.vx *= ratio;
+        velocityRef.current.vy *= ratio;
+      }
 
       if (distance({ x: nextX, y: nextY }, course.hole) <= HOLE_RADIUS) {
         velocityRef.current.vx = 0;
