@@ -39,6 +39,7 @@ export default function ChatPage() {
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'>('greeting');
+  const [gameMenuOpen, setGameMenuOpen] = useState(false);
 
   const TABS: { key: 'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
@@ -430,7 +431,7 @@ export default function ChatPage() {
           <p className="font-bold text-lg leading-tight">{currentUser}</p>
           <p className={`${userTheme.headerSubText} text-xs`}>MINE</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
           <div className={`flex items-center gap-1 ${userTheme.buttonDarkerBg} rounded-full p-1`}>
             <span className="px-1 text-[10px] text-violet-200">文字</span>
             {([
@@ -459,6 +460,14 @@ export default function ChatPage() {
               通知ON
             </button>
           )}
+          <button
+            onClick={() => setGameMenuOpen((prev) => !prev)}
+            aria-label="ゲーム"
+            className={`flex items-center gap-1.5 text-sm text-white ${userTheme.buttonBg} ${userTheme.buttonHover} px-4 py-2 rounded-full`}
+          >
+            <span className="text-base">🎮</span>
+            ゲーム
+          </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
           )}
@@ -487,6 +496,51 @@ export default function ChatPage() {
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           </button>
+
+          {gameMenuOpen && (
+            <div className="absolute right-12 top-full z-40 mt-2 w-56 rounded-2xl bg-white p-2 text-gray-800 shadow-2xl ring-1 ring-black/10">
+              <button
+                onClick={() => {
+                  setGameMenuOpen(false);
+                  router.push('/game');
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+              >
+                <span>ランキング</span>
+                <span>🏆</span>
+              </button>
+              <button
+                onClick={() => {
+                  setGameMenuOpen(false);
+                  router.push('/game/millionaire');
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+              >
+                <span>ミリオネア</span>
+                <span>💰</span>
+              </button>
+              <button
+                onClick={() => {
+                  setGameMenuOpen(false);
+                  router.push('/game/brain-training');
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+              >
+                <span>脳トレ</span>
+                <span>🧠</span>
+              </button>
+              <button
+                onClick={() => {
+                  setGameMenuOpen(false);
+                  router.push('/game/spot-difference');
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+              >
+                <span>間違い探し</span>
+                <span>🔎</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

@@ -48,6 +48,32 @@ export async function GET() {
         updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS quiz_questions (
+        id            SERIAL PRIMARY KEY,
+        question      TEXT NOT NULL,
+        choice_1      TEXT NOT NULL,
+        choice_2      TEXT NOT NULL,
+        choice_3      TEXT NOT NULL,
+        choice_4      TEXT NOT NULL,
+        answer_index  INTEGER NOT NULL,
+        difficulty    INTEGER NOT NULL,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS game_rankings (
+        id                SERIAL PRIMARY KEY,
+        user_name         TEXT NOT NULL,
+        game_type         TEXT NOT NULL,
+        cumulative_value  BIGINT NOT NULL DEFAULT 0,
+        best_value        BIGINT NOT NULL DEFAULT 0,
+        extra_value       BIGINT NOT NULL DEFAULT 0,
+        updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (user_name, game_type)
+      )
+    `;
     return NextResponse.json({ ok: true, message: 'テーブルを作成しました' });
   } catch (err) {
     console.error(err);
