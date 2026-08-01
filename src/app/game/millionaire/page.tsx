@@ -1,5 +1,6 @@
 'use client';
 
+import { FAILURE_IMAGE, FINAL_ANSWER_IMAGE, SUCCESS_IMAGE } from './character-images';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -20,7 +21,6 @@ const PRIZE_LADDER = [10000, 20000, 30000, 50000, 100000, 150000, 250000, 500000
 const CHOICE_LABELS = ['A', 'B', 'C', 'D'] as const;
 const FIRST_SAFETY_NET = 100000;
 const SECOND_SAFETY_NET = 1000000;
-const MINOMONTA_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220"><rect width="220" height="220" rx="36" fill="#f59e0b"/><circle cx="110" cy="95" r="58" fill="#fcd29f"/><circle cx="88" cy="92" r="6" fill="#111827"/><circle cx="132" cy="92" r="6" fill="#111827"/><path d="M82 120c12 14 44 14 56 0" stroke="#111827" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="62" y="32" width="96" height="28" rx="14" fill="#1f2937"/><text x="110" y="52" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#fef3c7">みのもんた</text></svg>`)}`;
 
 type MillionaireRanking = {
   cumulative_value: number;
@@ -65,7 +65,6 @@ export default function MillionairePage() {
   const [resultTotalPrize, setResultTotalPrize] = useState(0);
   const [resultCurrentPrize, setResultCurrentPrize] = useState(0);
   const [confirmChoiceNumber, setConfirmChoiceNumber] = useState<number | null>(null);
-  const [selectedChoiceText, setSelectedChoiceText] = useState('');
   const [resultModal, setResultModal] = useState<ResultModalState>({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
 
   useEffect(() => {
@@ -228,9 +227,7 @@ export default function MillionairePage() {
 
   const openConfirm = (choiceNumber: number) => {
     if (!currentQuestion || finished || answeredStage === currentStage) return;
-    const selected = visibleChoices.find((choice) => choice.number === choiceNumber);
     setConfirmChoiceNumber(choiceNumber);
-    setSelectedChoiceText(selected?.text ?? '');
   };
 
   const handleFinalAnswer = async () => {
@@ -334,7 +331,6 @@ export default function MillionairePage() {
 
   const restart = () => {
     setConfirmChoiceNumber(null);
-    setSelectedChoiceText('');
     setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
     const next = buildStageQuestions(allQuestions);
     setStageQuestions(next);
@@ -464,6 +460,7 @@ export default function MillionairePage() {
 
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold text-amber-200">ライフラインを使用する</p>
+            <p className="mb-2 text-sm font-semibold text-amber-200">ドロップアウトする</p>
             <div className="flex flex-wrap gap-2">
               <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">50:50</button>
               <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">テレフォン</button>
@@ -499,15 +496,6 @@ export default function MillionairePage() {
 
         <aside className="space-y-4">
           <div className="rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur">
-            <p className="text-sm text-white/60">ライフライン</p>
-            <ul className="mt-3 space-y-2 text-sm">
-              <li className="rounded-xl bg-white/5 px-3 py-2">50:50: {lifelines.fiftyUsed ? '使用済み' : '未使用'}</li>
-              <li className="rounded-xl bg-white/5 px-3 py-2">テレフォン: {lifelines.phoneUsed ? '使用済み' : '未使用'}</li>
-              <li className="rounded-xl bg-white/5 px-3 py-2">セイフティ: {lifelines.safetyUsed ? '使用済み' : lifelines.safetyArmed ? '待機中' : '未使用'}</li>
-            </ul>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur">
             <p className="text-sm text-white/60">賞金ラダー</p>
             <ol className="mt-3 space-y-2 text-sm">
               {[...PRIZE_LADDER].reverse().map((prize, index) => {
@@ -534,14 +522,10 @@ export default function MillionairePage() {
           <div className="relative w-full max-w-md rounded-[2rem] border border-amber-300/30 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/20">
             <button onClick={() => setConfirmChoiceNumber(null)} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
             <div className="flex justify-center">
-              <img src={MINOMONTA_IMAGE} alt="みのもんた" className="h-28 w-28 rounded-full border border-amber-300/30 object-cover" />
+              <img src={FINAL_ANSWER_IMAGE} alt="ファイナルアンサー" className="h-28 w-28 rounded-full border border-amber-300/30 object-cover" />
             </div>
             <h2 className="mt-4 text-center text-2xl font-black text-amber-300">ファイナルアンサー？</h2>
-            <p className="mt-3 text-center text-sm leading-6 text-white/80">「{selectedChoiceText || '選択肢'}」で回答しますか？</p>
-            <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-center">
-              <p className="text-sm text-amber-200">この一手で勝敗が決まります</p>
-              <button onClick={handleFinalAnswer} className="mt-3 rounded-full bg-amber-400 px-5 py-2.5 text-lg font-black text-slate-950 hover:bg-amber-300">ファイナルアンサー</button>
-            </div>
+            <button onClick={handleFinalAnswer} className="mt-5 w-full rounded-full bg-amber-400 px-5 py-3 text-lg font-black text-slate-950 hover:bg-amber-300">ファイナルアンサー</button>
           </div>
         </div>
       )}
@@ -551,7 +535,7 @@ export default function MillionairePage() {
           <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/10">
             <button onClick={handleModalPrimaryAction} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
             <div className="flex justify-center">
-              <img src={MINOMONTA_IMAGE} alt="みのもんた" className="h-24 w-24 rounded-full border border-amber-300/30 object-cover" />
+              <img src={resultModal.isSuccess ? SUCCESS_IMAGE : FAILURE_IMAGE} alt="みのもんた" className="h-24 w-24 rounded-full border border-amber-300/30 object-cover" />
             </div>
             <h2 className={`mt-4 text-center text-2xl font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
             <p className="mt-3 text-center text-sm leading-6 text-white/80">{resultModal.body}</p>
