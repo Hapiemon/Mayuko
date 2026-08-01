@@ -58,10 +58,16 @@ export async function GET() {
         choice_4      TEXT NOT NULL,
         answer_index  INTEGER NOT NULL,
         difficulty    INTEGER NOT NULL,
+        answer_key    TEXT,
+        question_number INTEGER,
+        prize_amount  BIGINT,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    await sql`ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS answer_key TEXT`;
+    await sql`ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS question_number INTEGER`;
+    await sql`ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS prize_amount BIGINT`;
     await sql`
       CREATE TABLE IF NOT EXISTS game_rankings (
         id                SERIAL PRIMARY KEY,

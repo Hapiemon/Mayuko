@@ -11,8 +11,28 @@ interface QuizQuestion {
   choice_3: string;
   choice_4: string;
   answer_index: number;
-  difficulty: number;
+  answer_key?: 'A' | 'B' | 'C' | 'D';
+  question_number?: number;
+  prize_amount?: number;
 }
+
+const PRIZE_BY_QUESTION_NUMBER: Record<number, number> = {
+  1: 10000,
+  2: 20000,
+  3: 30000,
+  4: 50000,
+  5: 100000,
+  6: 150000,
+  7: 250000,
+  8: 500000,
+  9: 750000,
+  10: 1000000,
+  11: 1500000,
+  12: 2500000,
+  13: 5000000,
+  14: 7500000,
+  15: 10000000,
+};
 
 const emptyForm = {
   question: '',
@@ -20,8 +40,9 @@ const emptyForm = {
   choice2: '',
   choice3: '',
   choice4: '',
-  answerIndex: 1,
-  difficulty: 1,
+  answerKey: 'A' as 'A' | 'B' | 'C' | 'D',
+  questionNumber: 1,
+  prizeAmount: PRIZE_BY_QUESTION_NUMBER[1],
 };
 
 export default function SettingsPage() {
@@ -36,7 +57,7 @@ export default function SettingsPage() {
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [quizMessage, setQuizMessage] = useState('');
-  const [difficultyFilter, setDifficultyFilter] = useState<number | 'all'>('all');
+  const [questionNumberFilter, setQuestionNumberFilter] = useState<number | 'all'>('all');
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
@@ -51,7 +72,7 @@ export default function SettingsPage() {
   const fetchQuizQuestions = async () => {
     setLoadingQuiz(true);
     try {
-      const query = difficultyFilter === 'all' ? '' : `?difficulty=${difficultyFilter}`;
+      const query = questionNumberFilter === 'all' ? '' : `?questionNumber=${questionNumberFilter}`;
       const res = await fetch(`/api/quiz-questions${query}`);
       if (!res.ok) {
         throw new Error('Failed to fetch quiz questions');
@@ -70,7 +91,7 @@ export default function SettingsPage() {
     if (!currentUser) return;
     fetchQuizQuestions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, difficultyFilter]);
+  }, [currentUser, questionNumberFilter]);
 
   const handleClearMayukoRead = async () => {
     if (!window.confirm('すべてのメッセージをまゆこ未読にしますか？')) {
@@ -141,15 +162,13 @@ export default function SettingsPage() {
       const payload = {
         id: editingId,
         question: form.question.trim(),
-        choice1: form.choice1.trim(),
-        choice2: form.choice2.trim(),
-        choice3: form.choice3.trim(),
-        choice4: form.choice4.trim(),
-        answerIndex: Number(form.answerIndex),
-        difficulty: Number(form.difficulty),
+        choices: [form.choice1.trim(), form.choice2.trim(), form.choice3.trim(), form.choice4.trim()],
+        answerKey: form.answerKey,
+        questionNumber: Number(form.questionNumber),
+        prizeAmount: Number(form.prizeAmount),
       };
 
-      if (!payload.question || !payload.choice1 || !payload.choice2 || !payload.choice3 || !payload.choice4) {
+      if (!payload.question || payload.choices.some((choice) => !choice)) {
         throw new Error('empty');
       }
 
@@ -211,8 +230,9 @@ export default function SettingsPage() {
       choice2: item.choice_2,
       choice3: item.choice_3,
       choice4: item.choice_4,
-      answerIndex: item.answer_index,
-      difficulty: item.difficulty,
+      answerKey: (item.answer_key ?? ({ 1: 'A', 2: 'B', 3: 'C', 4: 'D' }[item.answer_index as 1 | 2 | 3 | 4])) as 'A' | 'B' | 'C' | 'D',
+      questionNumber: item.question_number ?? 1,
+      prizeAmount: item.prize_amount ?? PRIZE_BY_QUESTION_NUMBER[item.question_number ?? 1],
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -241,7 +261,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">ミリオネア問題管理</h2>
-                <p className="text-sm text-gray-600 mt-1">15段階の問題を追加・編集・削除できます。</p>
+                <p className="text-sm text-gray-600 mt-1">第何問か・賞金額・正解A/B/C/Dで問題を管理できます。</p>
               </div>
               <button
                 onClick={() => router.push('/game')}
@@ -266,41 +286,52 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[1, 2, 3, 4].map((num) => (
                   <div key={num}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">選択肢{num}</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">選択肢{'ABCD'[num - 1]}</label>
                     <input
                       value={form[`choice${num}` as keyof typeof form] as string}
                       onChange={(e) => setForm((prev) => ({ ...prev, [`choice${num}`]: e.target.value }))}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-                      placeholder={`選択肢${num}`}
+                      placeholder={`選択肢${'ABCD'[num - 1]}`}
                     />
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">正解番号</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">正解</label>
                   <select
-                    value={form.answerIndex}
-                    onChange={(e) => setForm((prev) => ({ ...prev, answerIndex: Number(e.target.value) }))}
+                    value={form.answerKey}
+                    onChange={(e) => setForm((prev) => ({ ...prev, answerKey: e.target.value as 'A' | 'B' | 'C' | 'D' }))}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                   >
-                    {[1, 2, 3, 4].map((num) => (
-                      <option key={num} value={num}>{num}</option>
+                    {['A', 'B', 'C', 'D'].map((key) => (
+                      <option key={key} value={key}>{key}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">難易度</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">何問目</label>
                   <select
-                    value={form.difficulty}
-                    onChange={(e) => setForm((prev) => ({ ...prev, difficulty: Number(e.target.value) }))}
+                    value={form.questionNumber}
+                    onChange={(e) => {
+                      const questionNumber = Number(e.target.value);
+                      setForm((prev) => ({ ...prev, questionNumber, prizeAmount: PRIZE_BY_QUESTION_NUMBER[questionNumber] }));
+                    }}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                   >
-                    {Array.from({ length: 15 }, (_, i) => i + 1).map((level) => (
-                      <option key={level} value={level}>Lv.{level}</option>
+                    {Array.from({ length: 15 }, (_, i) => i + 1).map((questionNumber) => (
+                      <option key={questionNumber} value={questionNumber}>第{questionNumber}問</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">賞金</label>
+                  <input
+                    value={form.prizeAmount.toLocaleString('ja-JP')}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                  />
                 </div>
               </div>
 
@@ -380,16 +411,16 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">登録済み問題</h2>
-                <p className="text-sm text-gray-600">難易度ごとに確認できます。</p>
+                <p className="text-sm text-gray-600">何問目かごとに確認できます。</p>
               </div>
               <select
-                value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                value={questionNumberFilter}
+                onChange={(e) => setQuestionNumberFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                 className="rounded-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
               >
-                <option value="all">全難易度</option>
-                {Array.from({ length: 15 }, (_, i) => i + 1).map((level) => (
-                  <option key={level} value={level}>Lv.{level}</option>
+                <option value="all">全問題</option>
+                {Array.from({ length: 15 }, (_, i) => i + 1).map((questionNumber) => (
+                  <option key={questionNumber} value={questionNumber}>第{questionNumber}問</option>
                 ))}
               </select>
             </div>
@@ -404,7 +435,7 @@ export default function SettingsPage() {
                   <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold text-violet-600">Lv.{item.difficulty} / 正解: {item.answer_index}</p>
+                        <p className="text-xs font-semibold text-violet-600">第{item.question_number ?? 0}問 / ¥{Number(item.prize_amount ?? 0).toLocaleString('ja-JP')} / 正解: {item.answer_key ?? ({ 1: 'A', 2: 'B', 3: 'C', 4: 'D' }[item.answer_index as 1 | 2 | 3 | 4])}</p>
                         <p className="mt-1 text-sm font-semibold text-gray-900 whitespace-pre-wrap">{item.question}</p>
                       </div>
                       <div className="flex gap-2">
@@ -428,7 +459,7 @@ export default function SettingsPage() {
                           key={`${item.id}-${index}`}
                           className={`rounded-lg px-3 py-2 ${item.answer_index === index + 1 ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'bg-white'}`}
                         >
-                          {index + 1}. {choice}
+                          {'ABCD'[index]}. {choice}
                         </li>
                       ))}
                     </ol>

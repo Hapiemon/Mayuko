@@ -11,10 +11,13 @@ interface QuizQuestion {
   choice_3: string;
   choice_4: string;
   answer_index: number;
-  difficulty: number;
+  answer_key?: 'A' | 'B' | 'C' | 'D';
+  question_number?: number;
+  prize_amount?: number;
 }
 
-const PRIZE_LADDER = [1000, 3000, 5000, 10000, 30000, 50000, 100000, 300000, 500000, 1000000, 3000000, 5000000, 10000000, 30000000, 100000000];
+const PRIZE_LADDER = [10000, 20000, 30000, 50000, 100000, 150000, 250000, 500000, 750000, 1000000, 1500000, 2500000, 5000000, 7500000, 10000000];
+const CHOICE_LABELS = ['A', 'B', 'C', 'D'] as const;
 
 type LifelineState = {
   fiftyUsed: boolean;
@@ -74,8 +77,8 @@ export default function MillionairePage() {
     const pool = [...source];
     const chosen: QuizQuestion[] = [];
 
-    for (let difficulty = 1; difficulty <= 15; difficulty += 1) {
-      const exact = pool.filter((item) => item.difficulty === difficulty);
+    for (let questionNumber = 1; questionNumber <= 15; questionNumber += 1) {
+      const exact = pool.filter((item) => (item.question_number ?? 0) === questionNumber);
       const fallback = pool.filter((item) => !chosen.some((picked) => picked.id === item.id));
       const candidates = exact.length > 0 ? exact : fallback;
       if (candidates.length === 0) {
@@ -113,6 +116,7 @@ export default function MillionairePage() {
     if (!currentQuestion) return [];
     return [currentQuestion.choice_1, currentQuestion.choice_2, currentQuestion.choice_3, currentQuestion.choice_4].map((text, index) => ({
       number: index + 1,
+      label: CHOICE_LABELS[index],
       text,
       hidden: hiddenChoices.includes(index + 1),
     }));
@@ -176,7 +180,7 @@ export default function MillionairePage() {
     }
 
     await finishGame(
-      `不正解… 正解は ${currentQuestion.answer_index}番でした。`,
+      `不正解… 正解は ${currentQuestion.answer_key ?? CHOICE_LABELS[currentQuestion.answer_index - 1]} でした。`,
       wonPrize,
       Math.max(currentStage, 0),
       0,
@@ -259,7 +263,7 @@ export default function MillionairePage() {
           ) : (
             <>
               <div className="rounded-[1.5rem] border border-amber-400/30 bg-[linear-gradient(135deg,_rgba(251,191,36,0.18),_rgba(15,23,42,0.1))] px-6 py-8 shadow-inner shadow-amber-400/10">
-                <p className="text-sm text-amber-200">難易度 Lv.{currentQuestion.difficulty}</p>
+                <p className="text-sm text-amber-200">第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}</p>
                 <h2 className="mt-4 text-xl font-bold leading-relaxed md:text-2xl">{currentQuestion.question}</h2>
               </div>
 
@@ -271,7 +275,7 @@ export default function MillionairePage() {
                     onClick={() => handleAnswer(choice.number)}
                     className={`rounded-2xl border px-4 py-4 text-left transition ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : 'border-blue-300/30 bg-blue-500/10 hover:border-amber-300/60 hover:bg-amber-500/15'}`}
                   >
-                    <p className="text-xs text-amber-200">{choice.number}</p>
+                    <p className="text-xs text-amber-200">{choice.label}</p>
                     <p className="mt-1 text-base font-semibold">{choice.hidden ? '---' : choice.text}</p>
                   </button>
                 ))}
