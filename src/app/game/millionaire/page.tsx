@@ -291,7 +291,7 @@ export default function MillionairePage() {
     );
     setResultModal({
       open: true,
-      title: '不正解…',
+      title: '残念…!',
       body: `正解は ${getAnswerKey(currentQuestion)} でした。セーフティネットにより ¥${safePrize.toLocaleString('ja-JP')} です。`,
       isSuccess: false,
       primaryLabel: 'リザルト画面',
