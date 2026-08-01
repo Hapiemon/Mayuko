@@ -350,7 +350,11 @@ export default function MillionairePage() {
 
   const handleModalPrimaryAction = () => {
     if (resultModal.primaryAction === 'next') {
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+      setConfirmChoiceNumber(null);
       setCurrentStage((prev) => prev + 1);
       setHiddenChoices([]);
       setAnsweredStage(null);
