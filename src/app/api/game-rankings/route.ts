@@ -44,16 +44,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userName and gameType are required' }, { status: 400 });
     }
 
-    await sql`
-      INSERT INTO game_rankings (user_name, game_type, cumulative_value, best_value, extra_value)
-      VALUES (${userName}, ${gameType}, ${cumulativeDelta ?? 0}, ${bestValue ?? 0}, ${extraValue ?? 0})
-      ON CONFLICT (user_name, game_type)
-      DO UPDATE SET
-        cumulative_value = game_rankings.cumulative_value + ${cumulativeDelta ?? 0},
-        best_value = GREATEST(game_rankings.best_value, ${bestValue ?? 0}),
-        extra_value = GREATEST(game_rankings.extra_value, ${extraValue ?? 0}),
-        updated_at = NOW()
-    `;
+    if (gameType === 'spot_difference') {
+      await sql`
+        INSERT INTO game_rankings (user_name, game_type, cumulative_value, best_value, extra_value)
+        VALUES (${userName}, ${gameType}, ${cumulativeDelta ?? 0}, ${bestValue ?? 0}, ${extraValue ?? 0})
+        ON CONFLICT (user_name, game_type)
+        DO UPDATE SET
+          cumulative_value = game_rankings.cumulative_value + ${cumulativeDelta ?? 0},
+          best_value = CASE
+            WHEN game_rankings.best_value = 0 THEN ${bestValue ?? 0}
+            ELSE LEAST(game_rankings.best_value, ${bestValue ?? 0})
+          END,
+          extra_value = GREATEST(game_rankings.extra_value, ${extraValue ?? 0}),
+          updated_at = NOW()
+      `;
+    } else {
+      await sql`
+        INSERT INTO game_rankings (user_name, game_type, cumulative_value, best_value, extra_value)
+        VALUES (${userName}, ${gameType}, ${cumulativeDelta ?? 0}, ${bestValue ?? 0}, ${extraValue ?? 0})
+        ON CONFLICT (user_name, game_type)
+        DO UPDATE SET
+          cumulative_value = game_rankings.cumulative_value + ${cumulativeDelta ?? 0},
+          best_value = GREATEST(game_rankings.best_value, ${bestValue ?? 0}),
+          extra_value = GREATEST(game_rankings.extra_value, ${extraValue ?? 0}),
+          updated_at = NOW()
+      `;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

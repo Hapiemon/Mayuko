@@ -1,45 +1,109 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-interface StageData {
-  cells: string[];
-  oddIndex: number;
-  baseEmoji: string;
-  oddEmoji: string;
+type Point = { x: number; y: number };
+type Segment = { ax: number; ay: number; bx: number; by: number };
+
+interface RankingRow {
+  user_name: string;
+  game_type: string;
+  best_value: number;
 }
 
-const EMOJI_PAIRS = [
-  ['🍎', '🍏'],
-  ['🐶', '🐺'],
-  ['🌙', '⭐'],
-  ['🧁', '🍰'],
-  ['🚗', '🚙'],
-  ['🎈', '🎉'],
-  ['🌷', '🌹'],
-  ['🐟', '🐠'],
+const COURSE_WIDTH = 860;
+const COURSE_HEIGHT = 560;
+const BALL_RADIUS = 13;
+const HOLE_RADIUS = 22;
+const FRICTION = 0.986;
+const MIN_POWER = 4;
+const MAX_POWER = 34;
+const SPEED_STOP_THRESHOLD = 0.12;
+
+const WALLS: Segment[] = [
+  { ax: 90, ay: 70, bx: 760, by: 70 },
+  { ax: 90, ay: 70, bx: 90, by: 490 },
+  { ax: 760, ay: 70, bx: 760, by: 490 },
+  { ax: 90, ay: 490, bx: 760, by: 490 },
+  { ax: 180, ay: 70, bx: 180, by: 190 },
+  { ax: 180, ay: 260, bx: 180, by: 490 },
+  { ax: 180, ay: 190, bx: 340, by: 190 },
+  { ax: 250, ay: 260, bx: 430, by: 260 },
+  { ax: 340, ay: 120, bx: 340, by: 190 },
+  { ax: 430, ay: 260, bx: 430, by: 430 },
+  { ax: 250, ay: 350, bx: 430, by: 350 },
+  { ax: 520, ay: 70, bx: 520, by: 180 },
+  { ax: 520, ay: 250, bx: 520, by: 410 },
+  { ax: 340, ay: 430, bx: 640, by: 430 },
+  { ax: 610, ay: 150, bx: 760, by: 150 },
+  { ax: 610, ay: 150, bx: 610, by: 340 },
+  { ax: 610, ay: 340, bx: 700, by: 340 },
+  { ax: 700, ay: 220, bx: 700, by: 490 },
 ];
 
-function makeStage(stage: number): StageData {
-  const size = Math.min(3 + Math.floor((stage - 1) / 2), 5);
-  const total = size * size;
-  const [baseEmoji, oddEmoji] = EMOJI_PAIRS[(stage - 1) % EMOJI_PAIRS.length];
-  const oddIndex = Math.floor(Math.random() * total);
-  const cells = Array.from({ length: total }, (_, index) => (index === oddIndex ? oddEmoji : baseEmoji));
-  return { cells, oddIndex, baseEmoji, oddEmoji };
+const START_POINT: Point = { x: 130, y: 130 };
+const HOLE_POINT: Point = { x: 720, y: 440 };
+
+function distance(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function reflectVelocity(vx: number, vy: number, wall: Segment) {
+  const dx = wall.bx - wall.ax;
+  const dy = wall.by - wall.ay;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+  const dot = vx * nx + vy * ny;
+  return {
+    vx: (vx - 2 * dot * nx) * 0.92,
+    vy: (vy - 2 * dot * ny) * 0.92,
+  };
+}
+
+function pointToSegmentDistance(px: number, py: number, segment: Segment) {
+  const vx = segment.bx - segment.ax;
+  const vy = segment.by - segment.ay;
+  const wx = px - segment.ax;
+  const wy = py - segment.ay;
+  const c1 = vx * wx + vy * wy;
+  if (c1 <= 0) {
+    return Math.hypot(px - segment.ax, py - segment.ay);
+  }
+  const c2 = vx * vx + vy * vy;
+  if (c2 <= c1) {
+    return Math.hypot(px - segment.bx, py - segment.by);
+  }
+  const t = c1 / c2;
+  const projX = segment.ax + t * vx;
+  const projY = segment.ay + t * vy;
+  return Math.hypot(px - projX, py - projY);
 }
 
 export default function SpotDifferencePage() {
   const router = useRouter();
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const velocityRef = useRef({ vx: 0, vy: 0 });
+  const aimingStartRef = useRef<Point | null>(null);
   const [currentUser, setCurrentUser] = useState('');
-  const [stage, setStage] = useState(1);
-  const [cleared, setCleared] = useState(0);
-  const [bestRun, setBestRun] = useState(0);
-  const [message, setMessage] = useState('左右を見比べて違う1マスをタップ');
+  const [ball, setBall] = useState<Point>(START_POINT);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPoint, setDragPoint] = useState<Point | null>(null);
+  const [strokes, setStrokes] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
+  const [message, setMessage] = useState('☝️をドラッグして👃へカップインさせよう');
   const [finished, setFinished] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [stageData, setStageData] = useState<StageData>(() => makeStage(1));
+  const [success, setSuccess] = useState(false);
+  const [resultScore, setResultScore] = useState(0);
+  const [resultBestScore, setResultBestScore] = useState(0);
+  const [isNewBest, setIsNewBest] = useState(false);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -50,9 +114,35 @@ export default function SpotDifferencePage() {
     setCurrentUser(user);
   }, [router]);
 
-  const maxStage = 7;
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchBest = async () => {
+      try {
+        const res = await fetch('/api/game-rankings');
+        if (!res.ok) {
+          throw new Error('Failed to fetch rankings');
+        }
+        const data = (await res.json()) as RankingRow[];
+        const row = data.find((item) => item.user_name === currentUser && item.game_type === 'spot_difference');
+        setBestScore(Number(row?.best_value ?? 0));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchBest();
+  }, [currentUser]);
 
-  const saveResult = async (clearedCount: number, bestStage: number) => {
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  const canShoot = useMemo(() => !finished && Math.hypot(velocityRef.current.vx, velocityRef.current.vy) < SPEED_STOP_THRESHOLD, [finished, ball]);
+
+  const saveResult = async (finalStrokes: number) => {
     if (!currentUser || saved) return;
     try {
       await fetch('/api/game-rankings', {
@@ -61,55 +151,156 @@ export default function SpotDifferencePage() {
         body: JSON.stringify({
           userName: currentUser,
           gameType: 'spot_difference',
-          cumulativeDelta: clearedCount,
-          bestValue: bestStage,
-          extraValue: 0,
+          cumulativeDelta: finalStrokes,
+          bestValue: finalStrokes,
+          extraValue: 1,
         }),
       });
       setSaved(true);
+      setBestScore((prev) => (prev === 0 ? finalStrokes : Math.min(prev, finalStrokes)));
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handlePick = async (index: number) => {
-    if (finished) return;
+  const finishGame = async (finalStrokes: number) => {
+    const nextBest = bestScore === 0 ? finalStrokes : Math.min(bestScore, finalStrokes);
+    setFinished(true);
+    setSuccess(true);
+    setResultScore(finalStrokes);
+    setResultBestScore(nextBest);
+    setIsNewBest(bestScore === 0 || finalStrokes < bestScore);
+    setMessage('鼻ほじり成功！');
+    await saveResult(finalStrokes);
+  };
 
-    if (index === stageData.oddIndex) {
-      const nextCleared = cleared + 1;
-      setCleared(nextCleared);
-      setBestRun(Math.max(bestRun, stage));
-      setMessage(`正解！ ステージ${stage}クリア`);
+  const stepBall = () => {
+    setBall((prev) => {
+      let nextX = prev.x + velocityRef.current.vx;
+      let nextY = prev.y + velocityRef.current.vy;
 
-      if (stage === maxStage) {
-        setFinished(true);
-        await saveResult(nextCleared, stage);
-        return;
+      if (nextX - BALL_RADIUS <= 90 || nextX + BALL_RADIUS >= 760) {
+        velocityRef.current.vx *= -0.92;
+        nextX = clamp(nextX, 90 + BALL_RADIUS, 760 - BALL_RADIUS);
+      }
+      if (nextY - BALL_RADIUS <= 70 || nextY + BALL_RADIUS >= 490) {
+        velocityRef.current.vy *= -0.92;
+        nextY = clamp(nextY, 70 + BALL_RADIUS, 490 - BALL_RADIUS);
       }
 
-      window.setTimeout(() => {
-        const nextStage = stage + 1;
-        setStage(nextStage);
-        setStageData(makeStage(nextStage));
-      }, 500);
-    } else {
-      setFinished(true);
-      setMessage('見つからず終了。もう一回挑戦できます。');
-      await saveResult(cleared, bestRun);
+      for (const wall of WALLS.slice(4)) {
+        const dist = pointToSegmentDistance(nextX, nextY, wall);
+        if (dist <= BALL_RADIUS + 3) {
+          const reflected = reflectVelocity(velocityRef.current.vx, velocityRef.current.vy, wall);
+          velocityRef.current.vx = reflected.vx;
+          velocityRef.current.vy = reflected.vy;
+          nextX = prev.x + velocityRef.current.vx;
+          nextY = prev.y + velocityRef.current.vy;
+        }
+      }
+
+      velocityRef.current.vx *= FRICTION;
+      velocityRef.current.vy *= FRICTION;
+
+      if (distance({ x: nextX, y: nextY }, HOLE_POINT) <= HOLE_RADIUS) {
+        velocityRef.current.vx = 0;
+        velocityRef.current.vy = 0;
+        window.setTimeout(() => {
+          finishGame(strokes);
+        }, 120);
+        return { x: HOLE_POINT.x, y: HOLE_POINT.y };
+      }
+
+      if (Math.hypot(velocityRef.current.vx, velocityRef.current.vy) <= SPEED_STOP_THRESHOLD) {
+        velocityRef.current.vx = 0;
+        velocityRef.current.vy = 0;
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+      } else {
+        animationRef.current = requestAnimationFrame(stepBall);
+      }
+
+      return { x: nextX, y: nextY };
+    });
+  };
+
+  const getSvgPoint = (clientX: number, clientY: number): Point | null => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = COURSE_WIDTH / rect.width;
+    const scaleY = COURSE_HEIGHT / rect.height;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
+  };
+
+  const beginDrag = (clientX: number, clientY: number) => {
+    if (!canShoot) return;
+    const point = getSvgPoint(clientX, clientY);
+    if (!point) return;
+    if (distance(point, ball) > 40) return;
+    aimingStartRef.current = ball;
+    setIsDragging(true);
+    setDragPoint(point);
+  };
+
+  const moveDrag = (clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const point = getSvgPoint(clientX, clientY);
+    if (!point) return;
+    setDragPoint(point);
+  };
+
+  const endDrag = () => {
+    if (!isDragging || !dragPoint || !aimingStartRef.current) {
+      setIsDragging(false);
+      setDragPoint(null);
+      return;
     }
+
+    const dx = aimingStartRef.current.x - dragPoint.x;
+    const dy = aimingStartRef.current.y - dragPoint.y;
+    const power = clamp(Math.hypot(dx, dy) / 8, MIN_POWER, MAX_POWER);
+    const angle = Math.atan2(dy, dx);
+
+    velocityRef.current = {
+      vx: Math.cos(angle) * power,
+      vy: Math.sin(angle) * power,
+    };
+
+    setStrokes((prev) => prev + 1);
+    setMessage('☝️発射！ 壁に当たると反射します。');
+    setIsDragging(false);
+    setDragPoint(null);
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    animationRef.current = requestAnimationFrame(stepBall);
   };
 
   const restart = () => {
-    setStage(1);
-    setCleared(0);
-    setBestRun(0);
-    setMessage('左右を見比べて違う1マスをタップ');
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    velocityRef.current = { vx: 0, vy: 0 };
+    setBall(START_POINT);
+    setIsDragging(false);
+    setDragPoint(null);
+    setStrokes(0);
+    setMessage('☝️をドラッグして👃へカップインさせよう');
     setFinished(false);
     setSaved(false);
-    setStageData(makeStage(1));
+    setSuccess(false);
+    setResultScore(0);
+    setResultBestScore(bestScore);
+    setIsNewBest(false);
   };
-
-  const gridSize = useMemo(() => Math.sqrt(stageData.cells.length), [stageData.cells.length]);
 
   if (!currentUser) {
     return null;
@@ -118,10 +309,10 @@ export default function SpotDifferencePage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#14532d,_#0f172a_60%,_#020617)] text-white">
       <header className="border-b border-emerald-300/20 bg-black/20 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div>
-            <p className="text-xs text-emerald-200">GAME / SPOT THE DIFFERENCE</p>
-            <h1 className="text-2xl font-bold">間違い探し</h1>
+            <p className="text-xs text-emerald-200">GAME / NOSE PICKING GOLF</p>
+            <h1 className="text-2xl font-bold">鼻ほじりゲーム</h1>
           </div>
           <div className="flex gap-2">
             <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキングへ</button>
@@ -130,44 +321,116 @@ export default function SpotDifferencePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="rounded-[2rem] border border-emerald-300/20 bg-slate-950/60 p-6 shadow-2xl shadow-emerald-500/10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-emerald-200">STAGE {stage} / {maxStage}</p>
-              <p className="text-3xl font-black">クリア数 {cleared}</p>
+              <p className="text-sm text-emerald-200">現在の打数</p>
+              <p className="text-4xl font-black">{strokes}</p>
             </div>
-            <div className="rounded-full bg-white/10 px-4 py-2 text-sm">
-              違い: {stageData.baseEmoji} / {stageData.oddEmoji}
+            <div className="text-right text-sm text-white/80">
+              <p>最短打数: {bestScore === 0 ? '-' : bestScore}</p>
+              <p>目安: 20打前後でクリア</p>
+              <p>壁反射 + 減速あり</p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            {['左', '右'].map((label) => (
-              <div key={label} className="rounded-[1.5rem] bg-white/5 p-4">
-                <p className="mb-3 text-sm text-white/70">{label}</p>
-                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
-                  {stageData.cells.map((cell, index) => (
-                    <button
-                      key={`${label}-${index}`}
-                      onClick={() => handlePick(index)}
-                      disabled={finished}
-                      className="aspect-square rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-3xl transition hover:bg-emerald-400/20 disabled:opacity-40"
-                    >
-                      {cell}
-                    </button>
-                  ))}
+          <div className="mb-4 rounded-xl bg-white/5 px-4 py-3 text-sm text-white/90">{message}</div>
+
+          <div className="overflow-hidden rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3">
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${COURSE_WIDTH} ${COURSE_HEIGHT}`}
+              className="w-full touch-none select-none"
+              onMouseDown={(e) => beginDrag(e.clientX, e.clientY)}
+              onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
+              onMouseUp={endDrag}
+              onMouseLeave={() => { if (isDragging) endDrag(); }}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                if (touch) beginDrag(touch.clientX, touch.clientY);
+              }}
+              onTouchMove={(e) => {
+                const touch = e.touches[0];
+                if (touch) moveDrag(touch.clientX, touch.clientY);
+              }}
+              onTouchEnd={endDrag}
+            >
+              <rect x="90" y="70" width="670" height="420" rx="28" fill="rgba(22,163,74,0.18)" stroke="rgba(255,255,255,0.18)" strokeWidth="10" />
+
+              {WALLS.slice(4).map((wall, index) => (
+                <line
+                  key={`${wall.ax}-${wall.ay}-${index}`}
+                  x1={wall.ax}
+                  y1={wall.ay}
+                  x2={wall.bx}
+                  y2={wall.by}
+                  stroke="rgba(226,232,240,0.9)"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                />
+              ))}
+
+              <circle cx={START_POINT.x} cy={START_POINT.y} r="22" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" strokeDasharray="6 6" />
+              <text x={START_POINT.x} y={START_POINT.y + 7} textAnchor="middle" fontSize="22">🏁</text>
+
+              <circle cx={HOLE_POINT.x} cy={HOLE_POINT.y} r={HOLE_RADIUS + 6} fill="rgba(0,0,0,0.35)" />
+              <text x={HOLE_POINT.x} y={HOLE_POINT.y + 12} textAnchor="middle" fontSize={success ? '48' : '42'}>
+                👃
+              </text>
+              {success && (
+                <text x={HOLE_POINT.x - 6} y={HOLE_POINT.y + 15} textAnchor="middle" fontSize="30">
+                  ☝️
+                </text>
+              )}
+
+              {isDragging && dragPoint && (
+                <line
+                  x1={ball.x}
+                  y1={ball.y}
+                  x2={dragPoint.x}
+                  y2={dragPoint.y}
+                  stroke="rgba(250,204,21,0.9)"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray="10 8"
+                />
+              )}
+
+              {!success && (
+                <text x={ball.x} y={ball.y + 10} textAnchor="middle" fontSize="30">
+                  ☝️
+                </text>
+              )}
+            </svg>
+          </div>
+
+          {finished && (
+            <div className="mt-5 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-5 text-center">
+              <p className="text-4xl font-black text-emerald-200 md:text-5xl">鼻ほじり成功！</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-white/10 px-4 py-4">
+                  <p className="text-xs text-white/70">今回のスコア</p>
+                  <p className="mt-1 text-3xl font-black">{resultScore} 打</p>
+                </div>
+                <div className="rounded-xl bg-white/10 px-4 py-4">
+                  <p className="text-xs text-white/70">最高スコア</p>
+                  <p className="mt-1 text-3xl font-black">{resultBestScore} 打</p>
                 </div>
               </div>
-            ))}
-          </div>
+              {isNewBest && <p className="mt-4 text-lg font-semibold text-amber-300">最短打数を更新しました！</p>}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                <button onClick={restart} className="rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">もう一度挑戦</button>
+                <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold hover:bg-white/20">ランキングを見る</button>
+              </div>
+            </div>
+          )}
 
-          <div className="mt-5 rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/90">{message}</div>
-
-          <div className="mt-5 flex gap-2">
-            <button onClick={restart} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">最初から</button>
-            {finished && <button onClick={() => router.push('/game')} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">結果を見る</button>}
-          </div>
+          {!finished && (
+            <div className="mt-5 flex gap-2">
+              <button onClick={restart} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">最初から</button>
+            </div>
+          )}
         </section>
       </main>
     </div>

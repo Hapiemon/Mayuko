@@ -30,6 +30,14 @@ function renderRankingSummary(row: RankingRow, gameType: string) {
     };
   }
 
+  if (gameType === 'spot_difference') {
+    return {
+      total: `累計打数: ${row.cumulative_value}`,
+      best: `最短打数: ${row.best_value}`,
+      extra: `成功回数: ${row.extra_value}`,
+    };
+  }
+
   return {
     total: `累計: ${row.cumulative_value}`,
     best: `ベスト: ${row.best_value}`,
@@ -40,7 +48,7 @@ function renderRankingSummary(row: RankingRow, gameType: string) {
 const GAME_LABELS: Record<string, string> = {
   millionaire: 'ミリオネア',
   brain_training: '脳トレ',
-  spot_difference: '間違い探し',
+  spot_difference: '鼻ほじりゲーム',
 };
 
 export default function GameHubPage() {
@@ -121,9 +129,9 @@ export default function GameHubPage() {
             <p className="mt-3 text-sm text-white/80">4×4〜8×8の盤面を暗記して、裏返し後にペアを揃える。めくれた枚数がスコア。</p>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
-            <p className="text-sm text-emerald-200">タップで探す全7ステージ</p>
-            <h2 className="mt-2 text-2xl font-bold">🔎 間違い探し</h2>
-            <p className="mt-3 text-sm text-white/80">左右の盤面から違う1マスを見つけてステージを進める。</p>
+            <p className="text-sm text-emerald-200">反射と減速の2Dゴルフ</p>
+            <h2 className="mt-2 text-2xl font-bold">👃 鼻ほじりゲーム</h2>
+            <p className="mt-3 text-sm text-white/80">☝️を飛ばして👃にカップイン。少ない打数ほどランキング上位。</p>
           </Link>
         </section>
 
