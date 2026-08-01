@@ -75,20 +75,12 @@ export default function GameHubPage() {
             <p className="text-xs text-violet-200">MINE GAME ROOM</p>
             <h1 className="text-2xl font-bold">ゲームセンター</h1>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push('/settings')}
-              className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"
-            >
-              問題管理
-            </button>
-            <button
-              onClick={() => router.push('/chat')}
-              className="rounded-full bg-violet-500 px-4 py-2 text-sm font-semibold hover:bg-violet-400"
-            >
-              チャットへ戻る
-            </button>
-          </div>
+          <button
+            onClick={() => router.push('/chat')}
+            className="rounded-full bg-violet-500 px-4 py-2 text-sm font-semibold hover:bg-violet-400"
+          >
+            チャットへ戻る
+          </button>
         </div>
       </header>
 

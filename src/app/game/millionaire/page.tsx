@@ -255,7 +255,6 @@ export default function MillionairePage() {
           ) : !currentQuestion ? (
             <div className="rounded-2xl bg-white/5 px-4 py-10 text-center text-white/80">
               <p>問題が足りません。設定画面から追加してください。</p>
-              <button onClick={() => router.push('/settings')} className="mt-4 rounded-full bg-violet-500 px-4 py-2 text-sm font-semibold hover:bg-violet-400">問題管理へ</button>
             </div>
           ) : (
             <>
