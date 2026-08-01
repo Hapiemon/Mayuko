@@ -19,11 +19,11 @@ interface RankingRow {
 }
 
 const BASE_COURSE_WIDTH = 860;
-const COURSE_HEIGHT = 1700;
+const COURSE_HEIGHT = 2850;
 const COURSE_LEFT = 80;
 const COURSE_TOP = 80;
 const COURSE_RIGHT = 780;
-const COURSE_BOTTOM = 1620;
+const COURSE_BOTTOM = 2760;
 const BALL_RADIUS = 18;
 const HOLE_RADIUS = 34;
 // 基本摩擦係数（線形減速）
@@ -44,27 +44,45 @@ function clamp(value: number, min: number, max: number) {
 }
 
 const FIXED_PIPE_POINTS: Point[] = [
+  // 左上スタート → 右へ
   { x: 130, y: 160 },
   { x: 730, y: 160 },
-  { x: 730, y: 310 },
-  { x: 190, y: 310 },
-  { x: 190, y: 460 },
-  { x: 690, y: 460 },
-  { x: 690, y: 610 },
-  { x: 130, y: 610 },
-  { x: 130, y: 760 },
-  { x: 760, y: 760 },
-  { x: 760, y: 910 },
-  { x: 170, y: 910 },
-  { x: 170, y: 1060 },
-  { x: 700, y: 1060 },
-  { x: 700, y: 1210 },
-  { x: 140, y: 1210 },
-  { x: 140, y: 1360 },
-  { x: 740, y: 1360 },
-  { x: 740, y: 1510 },
-  { x: 230, y: 1510 },
-  { x: 230, y: 1560 },
+  // 右側を下へ
+  { x: 730, y: 420 },
+  // 左下方向に斜め
+  { x: 430, y: 560 },
+  // 左上方向に斜め（ジグザグ）
+  { x: 180, y: 440 },
+  // 左側を下へ
+  { x: 180, y: 740 },
+  // 右下方向に斜め
+  { x: 620, y: 920 },
+  // 右側を下へ
+  { x: 730, y: 920 },
+  { x: 730, y: 1160 },
+  // 左下方向に斜め
+  { x: 280, y: 1320 },
+  // 左へ
+  { x: 160, y: 1320 },
+  // 下へ
+  { x: 160, y: 1580 },
+  // 右下方向に斜め
+  { x: 580, y: 1760 },
+  { x: 730, y: 1760 },
+  // 下へ
+  { x: 730, y: 2020 },
+  // 左下方向に斜め
+  { x: 360, y: 2180 },
+  // 左上方向に斜め（ジグザグ）
+  { x: 180, y: 2080 },
+  // 左側を下へ
+  { x: 180, y: 2360 },
+  // 右下方向に斜め
+  { x: 560, y: 2530 },
+  // 下へ
+  { x: 560, y: 2680 },
+  // 左下方向 → 左下👃ゴール
+  { x: 160, y: 2780 },
 ];
 
 function buildFixedCourseLayout(): CourseLayout {
@@ -480,7 +498,13 @@ export default function SpotDifferencePage() {
 
           <div className={`mb-4 rounded-xl bg-white/5 px-4 py-3 text-white/90 ${textSizeClass}`}>{message}</div>
 
-          <div ref={containerRef} className="overflow-hidden rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3">
+          {/* スクロールコンテナ */}
+          <div
+            className="rounded-[1.75rem] border border-emerald-300/20 bg-[linear-gradient(180deg,_rgba(34,197,94,0.18),_rgba(22,101,52,0.32))] p-3"
+            style={{ maxHeight: '85vh', overflowY: 'scroll', scrollbarWidth: 'thin', scrollbarColor: 'rgba(52,211,153,0.55) rgba(15,23,42,0.6)' }}
+          >
+            {/* 幅計測用の内側div */}
+            <div ref={containerRef} className="w-full">
             {/* xScale: SVG描画用にベース座標(860)をコンテナ幅にスケール */}
             {(() => {
             const xScale = svgWidth / BASE_COURSE_WIDTH;
@@ -631,6 +655,7 @@ export default function SpotDifferencePage() {
             </svg>
             );
             })()}
+            </div>
           </div>
 
           {finished && (
