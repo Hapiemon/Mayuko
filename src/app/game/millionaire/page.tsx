@@ -175,7 +175,13 @@ export default function MillionairePage() {
           throw new Error('failed');
         }
         const data = (await res.json()) as QuizQuestion[];
-        setAllQuestions(data);
+        const normalized = data.map((item) => ({
+          ...item,
+          answer_index: Number(item.answer_index),
+          question_number: item.question_number != null ? Number(item.question_number) : undefined,
+          prize_amount: item.prize_amount != null ? Number(item.prize_amount) : undefined,
+        }));
+        setAllQuestions(normalized);
       } catch (err) {
         console.error(err);
         setStatus('問題の取得に失敗しました');
@@ -314,11 +320,12 @@ export default function MillionairePage() {
   };
 
   const finishGame = async (message: string, prize: number, cleared: boolean) => {
+    const numericPrize = Number(prize);
     setFinished(true);
-    setWonPrize(prize);
+    setWonPrize(numericPrize);
     setStatus(message);
-    setResultCurrentPrize(prize);
-    const result = await saveRanking(prize, cleared);
+    setResultCurrentPrize(numericPrize);
+    const result = await saveRanking(numericPrize, cleared);
     setResultBestPrize(result.bestPrize);
     setResultTotalPrize(result.totalPrize);
   };
@@ -342,7 +349,7 @@ export default function MillionairePage() {
     setSuspenseOpen(false);
 
     if (isCorrect) {
-      const prize = currentQuestion.prize_amount ?? currentPrizeValue;
+      const prize = Number(currentQuestion.prize_amount ?? currentPrizeValue);
       setWonPrize(prize);
 
       if (currentStage === 14 || currentStage === stageQuestions.length - 1) {
