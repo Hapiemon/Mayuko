@@ -709,16 +709,21 @@ export default function ChatPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+          <button onClick={() => mediaInputRef.current?.click()} aria-label="共有" className={`flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <div className="flex-1" />
           <button
             onClick={() => setCannedOpen((s) => !s)}
             aria-pressed={cannedOpen}
             aria-label="定型文"
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}
+            className={`flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width="28"
+              height="28"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -730,12 +735,8 @@ export default function ChatPage() {
               <path d="M7 7h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H10l-4 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
             </svg>
           </button>
-          <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-          <button onClick={() => mediaInputRef.current?.click()} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBgLight} ${userTheme.buttonHoverLight}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </button>
           <div className="flex-1" />
-          <button onClick={sendText} disabled={!inputText.trim()} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${userTheme.buttonBg} ${userTheme.buttonHover} text-white text-xl disabled:opacity-50`}>➤</button>
+          <button onClick={sendText} disabled={!inputText.trim()} className={`flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-full ${userTheme.buttonBg} ${userTheme.buttonHover} text-white text-2xl disabled:opacity-50`}>➤</button>
         </div>
       </div>
     </div>
