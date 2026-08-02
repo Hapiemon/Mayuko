@@ -351,6 +351,10 @@ export default function MillionairePage() {
     setSuspenseOpen(false);
 
     if (isCorrect) {
+      // セイフティはその問題限りの効果。正解した場合も使用済みにして次の問題へは持ち越さない。
+      if (lifelines.safetyArmed) {
+        setLifelines((prev) => ({ ...prev, safetyArmed: false, safetyUsed: true }));
+      }
       const prize = Number(currentQuestion.prize_amount ?? currentPrizeValue);
       setWonPrize(prize);
 
