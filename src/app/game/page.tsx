@@ -191,7 +191,7 @@ export default function GameHubPage() {
           {loading ? (
             <p className={`mt-4 text-white/70 ${textSizeClass}`}>読込中...</p>
           ) : (
-            <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 space-y-4">
               {grouped.map(({ key, rows }) => (
                 <div key={key} className="rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
                   <h3 className="text-lg font-semibold">{GAME_LABELS[key]}</h3>
