@@ -139,6 +139,7 @@ export default function MillionairePage() {
   const [finished, setFinished] = useState(false);
   const [wonPrize, setWonPrize] = useState(0);
   const [answeredStage, setAnsweredStage] = useState<number | null>(null);
+  const [selectedChoiceNumber, setSelectedChoiceNumber] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [rankingStats, setRankingStats] = useState<MillionaireRanking>({ cumulative_value: 0, best_value: 0, extra_value: 0 });
   const [resultBestPrize, setResultBestPrize] = useState(0);
@@ -341,6 +342,7 @@ export default function MillionairePage() {
     const choiceNumber = confirmChoiceNumber;
     setConfirmChoiceNumber(null);
     setAnsweredStage(currentStage);
+    setSelectedChoiceNumber(choiceNumber);
     const isCorrect = choiceNumber === currentQuestion.answer_index;
 
     setSuspenseOpen(true);
@@ -353,11 +355,11 @@ export default function MillionairePage() {
       setWonPrize(prize);
 
       if (currentStage === 14 || currentStage === stageQuestions.length - 1) {
-        await finishGame('🎉 全問正解でクリア！', prize, true);
+        await finishGame('せいかーーーーーいっ！', prize, true);
         setResultModal({
           open: true,
-          title: '🎉 全問正解でクリア！',
-          body: `¥${new Intl.NumberFormat('ja-JP').format(prize)}を獲得しました。`,
+          title: 'せいかーーーーーいっ！',
+          body: '1000万円はあなたのものです。',
           isSuccess: true,
           primaryLabel: '結果を見る',
           primaryAction: 'result',
@@ -382,6 +384,7 @@ export default function MillionairePage() {
     if (lifelines.safetyArmed) {
       setLifelines((prev) => ({ ...prev, safetyArmed: false, safetyUsed: true }));
       setAnsweredStage(null);
+      setSelectedChoiceNumber(null);
       setStatus('セイフティ発動！ 1回だけ復活しました。もう一度答えてください。');
       setResultModal({
         open: true,
@@ -441,6 +444,7 @@ export default function MillionairePage() {
 
   const restart = () => {
     setConfirmChoiceNumber(null);
+    setSelectedChoiceNumber(null);
     setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
     const next = buildStageQuestions(allQuestions);
     setStageQuestions(next);
@@ -464,6 +468,7 @@ export default function MillionairePage() {
       }
       setResultModal({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
       setConfirmChoiceNumber(null);
+      setSelectedChoiceNumber(null);
       setCurrentStage((prev) => prev + 1);
       setHiddenChoices([]);
       setAnsweredStage(null);
@@ -553,17 +558,26 @@ export default function MillionairePage() {
               `}</style>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                {visibleChoices.map((choice) => (
-                  <button
-                    key={choice.number}
-                    disabled={choice.hidden || finished || introVisible}
-                    onClick={() => openConfirm(choice.number)}
-                    className={`rounded-2xl border px-4 py-4 text-left transition-transform duration-100 ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : introVisible ? 'invisible border-blue-300/30 bg-blue-500/10 opacity-0' : 'border-blue-300/30 bg-blue-500/10 active:scale-95 active:border-amber-300 active:bg-amber-500/30'}`}
-                  >
-                    <p className={`${fs.choiceLabel} text-amber-200`}>{choice.label}</p>
-                    <p className={`mt-1 ${fs.choiceText} font-semibold`}>{choice.hidden ? '---' : choice.text}</p>
-                  </button>
-                ))}
+                {visibleChoices.map((choice) => {
+                  const isCorrectChoice = finished && choice.number === currentQuestion.answer_index;
+                  const isWrongSelected = finished && selectedChoiceNumber === choice.number && choice.number !== currentQuestion.answer_index;
+                  const revealClass = isCorrectChoice
+                    ? 'border-lime-400 bg-lime-400/80 text-slate-950'
+                    : isWrongSelected
+                      ? 'border-red-500 bg-red-500/80 text-white'
+                      : '';
+                  return (
+                    <button
+                      key={choice.number}
+                      disabled={choice.hidden || finished || introVisible}
+                      onClick={() => openConfirm(choice.number)}
+                      className={`rounded-2xl border px-4 py-4 text-left transition-transform duration-100 ${revealClass !== '' ? revealClass : choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : introVisible ? 'invisible border-blue-300/30 bg-blue-500/10 opacity-0' : 'border-blue-300/30 bg-blue-500/10 active:scale-95 active:border-amber-300 active:bg-amber-500/30'}`}
+                    >
+                      <p className={`${fs.choiceLabel} ${revealClass !== '' ? 'text-slate-900' : 'text-amber-200'}`}>{choice.label}</p>
+                      <p className={`mt-1 ${fs.choiceText} font-semibold`}>{choice.hidden && revealClass === '' ? '---' : choice.text}</p>
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}
