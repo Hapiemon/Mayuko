@@ -1,6 +1,6 @@
 'use client';
 
-import { FAILURE_IMAGE, FINAL_ANSWER_IMAGE, SUCCESS_IMAGE } from './character-images';
+import { FAILURE_IMAGE, FINAL_ANSWER_IMAGE, SUCCESS_IMAGE, SUSPENSE_IMAGE } from './character-images';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -149,6 +149,7 @@ export default function MillionairePage() {
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const [helpTopic, setHelpTopic] = useState<'lifeline' | 'dropout' | null>(null);
   const [introVisible, setIntroVisible] = useState(false);
+  const [suspenseOpen, setSuspenseOpen] = useState(false);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -250,7 +251,7 @@ export default function MillionairePage() {
   const stageNumber = currentStage + 1;
   const currentPrizeValue = PRIZE_LADDER[currentStage] ?? 0;
   const safePrize = wonPrize >= SECOND_SAFETY_NET ? SECOND_SAFETY_NET : wonPrize >= FIRST_SAFETY_NET ? FIRST_SAFETY_NET : 0;
-  const isModalOpen = confirmChoiceNumber !== null || resultModal.open || helpTopic !== null;
+  const isModalOpen = confirmChoiceNumber !== null || resultModal.open || helpTopic !== null || suspenseOpen;
   const fs = FONT_SIZE_CLASSES[messageFontSize];
 
   const getAnswerKey = (question: QuizQuestion) => question.answer_key ?? CHOICE_LABELS[(question.answer_index - 1) as 0 | 1 | 2 | 3];
@@ -334,6 +335,10 @@ export default function MillionairePage() {
     setConfirmChoiceNumber(null);
     setAnsweredStage(currentStage);
     const isCorrect = choiceNumber === currentQuestion.answer_index;
+
+    setSuspenseOpen(true);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    setSuspenseOpen(false);
 
     if (isCorrect) {
       const prize = currentQuestion.prize_amount ?? currentPrizeValue;
@@ -545,7 +550,7 @@ export default function MillionairePage() {
                     key={choice.number}
                     disabled={choice.hidden || finished || introVisible}
                     onClick={() => openConfirm(choice.number)}
-                    className={`rounded-2xl border px-4 py-4 text-left transition-transform duration-100 ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : introVisible ? 'border-blue-300/30 bg-blue-500/10 opacity-40' : 'border-blue-300/30 bg-blue-500/10 active:scale-95 active:border-amber-300 active:bg-amber-500/30'}`}
+                    className={`rounded-2xl border px-4 py-4 text-left transition-transform duration-100 ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : introVisible ? 'invisible border-blue-300/30 bg-blue-500/10 opacity-0' : 'border-blue-300/30 bg-blue-500/10 active:scale-95 active:border-amber-300 active:bg-amber-500/30'}`}
                   >
                     <p className={`${fs.choiceLabel} text-amber-200`}>{choice.label}</p>
                     <p className={`mt-1 ${fs.choiceText} font-semibold`}>{choice.hidden ? '---' : choice.text}</p>
@@ -662,6 +667,17 @@ export default function MillionairePage() {
             </div>
             <h2 className={`mt-4 text-center ${fs.modalTitle} font-black text-amber-300`}>ファイナルアンサー？</h2>
             <button onClick={handleFinalAnswer} className={`mt-5 w-full rounded-full bg-amber-400 px-5 py-3 ${fs.modalButton} font-black text-slate-950 hover:bg-amber-300`}>ファイナルアンサー</button>
+          </div>
+        </div>
+      )}
+
+      {suspenseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 text-center shadow-2xl shadow-amber-500/10">
+            <div className="flex justify-center">
+              <img src={SUSPENSE_IMAGE} alt="みのもんた" className="h-40 w-40 rounded-full border border-amber-300/30 object-cover" />
+            </div>
+            <p className={`mt-6 ${fs.modalTitle} font-black tracking-widest text-amber-300`}>.............</p>
           </div>
         </div>
       )}
