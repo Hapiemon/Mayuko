@@ -663,7 +663,7 @@ export default function MillionairePage() {
           <div className="relative w-full max-w-md rounded-[2rem] border border-amber-300/30 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/20">
             <button onClick={() => setConfirmChoiceNumber(null)} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
             <div className="flex justify-center">
-              <img src={FINAL_ANSWER_IMAGE} alt="ファイナルアンサー" className="h-28 w-28 rounded-full border border-amber-300/30 object-cover" />
+              <img src={FINAL_ANSWER_IMAGE} alt="ファイナルアンサー" className="max-h-52 w-auto rounded-xl object-contain" />
             </div>
             <h2 className={`mt-4 text-center ${fs.modalTitle} font-black text-amber-300`}>ファイナルアンサー？</h2>
             <button onClick={handleFinalAnswer} className={`mt-5 w-full rounded-full bg-amber-400 px-5 py-3 ${fs.modalButton} font-black text-slate-950 hover:bg-amber-300`}>ファイナルアンサー</button>
@@ -675,7 +675,7 @@ export default function MillionairePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 text-center shadow-2xl shadow-amber-500/10">
             <div className="flex justify-center">
-              <img src={SUSPENSE_IMAGE} alt="みのもんた" className="h-40 w-40 rounded-full border border-amber-300/30 object-cover" />
+              <img src={SUSPENSE_IMAGE} alt="みのもんた" className="max-h-64 w-auto rounded-xl object-contain" />
             </div>
             <p className={`mt-6 ${fs.modalTitle} font-black tracking-widest text-amber-300`}>.............</p>
           </div>
@@ -687,7 +687,7 @@ export default function MillionairePage() {
           <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/10">
             <button onClick={handleModalPrimaryAction} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
             <div className="flex justify-center">
-              <img src={resultModal.isSuccess ? SUCCESS_IMAGE : FAILURE_IMAGE} alt="みのもんた" className="h-24 w-24 rounded-full border border-amber-300/30 object-cover" />
+              <img src={resultModal.isSuccess ? SUCCESS_IMAGE : FAILURE_IMAGE} alt="みのもんた" className="max-h-52 w-auto rounded-xl object-contain" />
             </div>
             <h2 className={`mt-4 text-center ${fs.modalTitle} font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
             <p className={`mt-3 text-center ${fs.modalBody} text-white/80`}>{resultModal.body}</p>
