@@ -36,7 +36,7 @@ function renderRankingScore(row: RankingRow, gameType: RankingGroupKey) {
 const GAME_LABELS: Record<string, string> = {
   millionaire_total: 'クイズ$ミリオネア 総獲得金額',
   millionaire_best: 'クイズ$ミリオネア 最高獲得金額',
-  brain_training: '脳トレ',
+  brain_training: '神経衰弱',
   spot_difference: '鼻ほじり',
 };
 
