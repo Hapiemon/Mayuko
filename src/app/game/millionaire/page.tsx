@@ -395,14 +395,14 @@ export default function MillionairePage() {
     }
 
     await finishGame(
-      `不正解… 正解は ${getAnswerKey(currentQuestion)} でした。セーフティネットにより ¥${safePrize.toLocaleString('ja-JP')} 獲得です。`,
+      `不正解… 正解は ${getAnswerKey(currentQuestion)} でした。<br>獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
       safePrize,
       false,
     );
     setResultModal({
       open: true,
       title: '残念…!',
-      body: `正解は ${getAnswerKey(currentQuestion)} でした。セーフティネットにより ¥${safePrize.toLocaleString('ja-JP')} です。`,
+      body: `正解は ${getAnswerKey(currentQuestion)} でした。<br>獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
       isSuccess: false,
       primaryLabel: 'リザルト画面',
       primaryAction: 'result',
