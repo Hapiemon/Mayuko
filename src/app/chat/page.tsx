@@ -204,6 +204,15 @@ export default function ChatPage() {
         ? 'gap-1 pb-1'
         : 'gap-1 pb-1';
 
+  const gameMenuButtonSizeClass =
+    messageFontSize === 'small'
+      ? 'px-3 py-2 text-xs'
+      : messageFontSize === 'large'
+        ? 'px-4 py-3 text-2xl'
+        : 'px-3 py-2 text-sm';
+
+  const gameMenuWidthClass = messageFontSize === 'large' ? 'w-72' : 'w-56';
+
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
     if (!user) {
@@ -498,13 +507,13 @@ export default function ChatPage() {
           </button>
 
           {gameMenuOpen && (
-            <div className="absolute right-12 top-full z-40 mt-2 w-56 rounded-2xl bg-white p-2 text-gray-800 shadow-2xl ring-1 ring-black/10">
+            <div className={`absolute right-12 top-full z-40 mt-2 ${gameMenuWidthClass} space-y-2 rounded-2xl bg-white p-2 text-gray-800 shadow-2xl ring-1 ring-black/10`}>
               <button
                 onClick={() => {
                   setGameMenuOpen(false);
                   router.push('/game');
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+                className={`flex w-full items-center justify-between rounded-xl text-left font-semibold bg-yellow-400 text-slate-900 hover:bg-yellow-300 ${gameMenuButtonSizeClass}`}
               >
                 <span>🤩ランキング🤩</span>
               </button>
@@ -513,7 +522,7 @@ export default function ChatPage() {
                   setGameMenuOpen(false);
                   router.push('/game/millionaire');
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+                className={`flex w-full items-center justify-between rounded-xl text-left font-semibold bg-red-500 text-white hover:bg-red-400 ${gameMenuButtonSizeClass}`}
               >
                 <span>クイズ$ミリオネア</span>
               </button>
@@ -522,7 +531,7 @@ export default function ChatPage() {
                   setGameMenuOpen(false);
                   router.push('/game/brain-training');
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+                className={`flex w-full items-center justify-between rounded-xl text-left font-semibold bg-blue-500 text-white hover:bg-blue-400 ${gameMenuButtonSizeClass}`}
               >
                 <span>神経衰弱ゲーム</span>
               </button>
@@ -531,7 +540,7 @@ export default function ChatPage() {
                   setGameMenuOpen(false);
                   router.push('/game/spot-difference');
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
+                className={`flex w-full items-center justify-between rounded-xl text-left font-semibold bg-green-500 text-white hover:bg-green-400 ${gameMenuButtonSizeClass}`}
               >
                 <span>鼻ほじりゲーム</span>
               </button>

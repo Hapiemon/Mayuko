@@ -46,6 +46,86 @@ type ResultModalState = {
   secondaryAction?: 'retry' | 'close';
 };
 
+type MessageFontSize = 'small' | 'medium' | 'large';
+
+const FONT_SIZE_CLASSES = {
+  small: {
+    pageTitle: 'text-lg',
+    headerButton: 'text-xs',
+    sectionLabel: 'text-xs',
+    prizeValue: 'text-2xl',
+    badge: 'text-xs',
+    questionMeta: 'text-xs',
+    questionTitle: 'text-lg md:text-xl',
+    choiceLabel: 'text-[10px]',
+    choiceText: 'text-sm',
+    status: 'text-xs',
+    infoLabel: 'text-[10px]',
+    infoValue: 'text-sm',
+    lifelineLabel: 'text-xs',
+    lifelineButton: 'text-xs',
+    resultHeading: 'text-3xl md:text-4xl',
+    resultLabel: 'text-xs',
+    resultValue: 'text-2xl',
+    resultButton: 'text-sm',
+    ladderLabel: 'text-xs',
+    ladderItem: 'text-xs',
+    modalTitle: 'text-xl',
+    modalBody: 'text-xs leading-5',
+    modalButton: 'text-sm',
+  },
+  medium: {
+    pageTitle: 'text-xl',
+    headerButton: 'text-sm',
+    sectionLabel: 'text-sm',
+    prizeValue: 'text-3xl',
+    badge: 'text-sm',
+    questionMeta: 'text-sm',
+    questionTitle: 'text-xl md:text-2xl',
+    choiceLabel: 'text-xs',
+    choiceText: 'text-base',
+    status: 'text-sm',
+    infoLabel: 'text-xs',
+    infoValue: 'text-base',
+    lifelineLabel: 'text-sm',
+    lifelineButton: 'text-sm',
+    resultHeading: 'text-4xl md:text-5xl',
+    resultLabel: 'text-sm',
+    resultValue: 'text-3xl',
+    resultButton: 'text-base',
+    ladderLabel: 'text-sm',
+    ladderItem: 'text-sm',
+    modalTitle: 'text-2xl',
+    modalBody: 'text-sm leading-6',
+    modalButton: 'text-base',
+  },
+  large: {
+    pageTitle: 'text-2xl',
+    headerButton: 'text-lg',
+    sectionLabel: 'text-lg',
+    prizeValue: 'text-4xl',
+    badge: 'text-lg',
+    questionMeta: 'text-lg',
+    questionTitle: 'text-2xl md:text-3xl',
+    choiceLabel: 'text-base',
+    choiceText: 'text-xl',
+    status: 'text-lg',
+    infoLabel: 'text-sm',
+    infoValue: 'text-xl',
+    lifelineLabel: 'text-lg',
+    lifelineButton: 'text-lg',
+    resultHeading: 'text-5xl md:text-6xl',
+    resultLabel: 'text-lg',
+    resultValue: 'text-4xl',
+    resultButton: 'text-xl',
+    ladderLabel: 'text-lg',
+    ladderItem: 'text-base',
+    modalTitle: 'text-3xl',
+    modalBody: 'text-lg leading-7',
+    modalButton: 'text-xl',
+  },
+} as const;
+
 export default function MillionairePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState('');
@@ -66,6 +146,7 @@ export default function MillionairePage() {
   const [resultCurrentPrize, setResultCurrentPrize] = useState(0);
   const [confirmChoiceNumber, setConfirmChoiceNumber] = useState<number | null>(null);
   const [resultModal, setResultModal] = useState<ResultModalState>({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
+  const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -74,6 +155,10 @@ export default function MillionairePage() {
       return;
     }
     setCurrentUser(user);
+    const savedFontSize = localStorage.getItem(`messageFontSize:${user}`) as MessageFontSize | null;
+    if (savedFontSize === 'small' || savedFontSize === 'medium' || savedFontSize === 'large') {
+      setMessageFontSize(savedFontSize);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -164,6 +249,7 @@ export default function MillionairePage() {
   const currentPrizeValue = PRIZE_LADDER[currentStage] ?? 0;
   const safePrize = wonPrize >= SECOND_SAFETY_NET ? SECOND_SAFETY_NET : wonPrize >= FIRST_SAFETY_NET ? FIRST_SAFETY_NET : 0;
   const isModalOpen = confirmChoiceNumber !== null || resultModal.open;
+  const fs = FONT_SIZE_CLASSES[messageFontSize];
 
   const getAnswerKey = (question: QuizQuestion) => question.answer_key ?? CHOICE_LABELS[(question.answer_index - 1) as 0 | 1 | 2 | 3];
 
@@ -392,12 +478,12 @@ export default function MillionairePage() {
         <header className="border-b border-amber-400/20 bg-black/30 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
             <div>
-              <p className="text-xs text-amber-200">GAME / MILLIONAIRE</p>
-              <h1 className="text-xl font-bold">クイズ$ミリオネア</h1>
+              <p className={`${fs.badge} text-amber-200`}>GAME / MILLIONAIRE</p>
+              <h1 className={`${fs.pageTitle} font-bold`}>クイズ$ミリオネア</h1>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">ランキング</button>
-              <button onClick={() => router.push('/chat')} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400">チャット</button>
+              <button onClick={() => router.push('/game')} className={`rounded-full bg-white/10 px-4 py-2 ${fs.headerButton} font-semibold hover:bg-white/20`}>ランキング</button>
+              <button onClick={() => router.push('/chat')} className={`rounded-full bg-amber-500 px-4 py-2 ${fs.headerButton} font-semibold text-slate-950 hover:bg-amber-400`}>チャット</button>
             </div>
           </div>
         </header>
@@ -406,25 +492,25 @@ export default function MillionairePage() {
           <section className="rounded-[2rem] border border-amber-300/20 bg-slate-950/70 p-6 shadow-2xl shadow-amber-500/10 backdrop-blur">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-amber-200">現在獲得済み賞金</p>
-              <p className="text-3xl font-black text-amber-300">¥{wonPrize.toLocaleString('ja-JP')}</p>
+              <p className={`${fs.sectionLabel} text-amber-200`}>現在獲得済み賞金</p>
+              <p className={`${fs.prizeValue} font-black text-amber-300`}>¥{wonPrize.toLocaleString('ja-JP')}</p>
             </div>
-            <div className="rounded-full bg-white/10 px-4 py-2 text-sm">
+            <div className={`rounded-full bg-white/10 px-4 py-2 ${fs.badge}`}>
               第{stageNumber}問 / 15問
             </div>
           </div>
 
           {loading ? (
-            <p className="rounded-2xl bg-white/5 px-4 py-10 text-center text-white/70">問題を読込中...</p>
+            <p className={`rounded-2xl bg-white/5 px-4 py-10 text-center ${fs.status} text-white/70`}>問題を読込中...</p>
           ) : !currentQuestion ? (
-            <div className="rounded-2xl bg-white/5 px-4 py-10 text-center text-white/80">
+            <div className={`rounded-2xl bg-white/5 px-4 py-10 text-center ${fs.status} text-white/80`}>
               <p>問題が足りません。設定画面から追加してください。</p>
             </div>
           ) : (
             <>
               <div className="rounded-[1.5rem] border border-amber-400/30 bg-[linear-gradient(135deg,_rgba(251,191,36,0.18),_rgba(15,23,42,0.1))] px-6 py-8 shadow-inner shadow-amber-400/10">
-                <p className="text-sm text-amber-200">第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}</p>
-                <h2 className="mt-4 text-xl font-bold leading-relaxed md:text-2xl">{currentQuestion.question}</h2>
+                <p className={`${fs.questionMeta} text-amber-200`}>第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}</p>
+                <h2 className={`mt-4 ${fs.questionTitle} font-bold leading-relaxed`}>{currentQuestion.question}</h2>
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
@@ -435,66 +521,66 @@ export default function MillionairePage() {
                     onClick={() => openConfirm(choice.number)}
                     className={`rounded-2xl border px-4 py-4 text-left transition ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : 'border-blue-300/30 bg-blue-500/10 hover:border-amber-300/60 hover:bg-amber-500/15'}`}
                   >
-                    <p className="text-xs text-amber-200">{choice.label}</p>
-                    <p className="mt-1 text-base font-semibold">{choice.hidden ? '---' : choice.text}</p>
+                    <p className={`${fs.choiceLabel} text-amber-200`}>{choice.label}</p>
+                    <p className={`mt-1 ${fs.choiceText} font-semibold`}>{choice.hidden ? '---' : choice.text}</p>
                   </button>
                 ))}
               </div>
             </>
           )}
 
-          <div className="mt-5 rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/90">
+          <div className={`mt-5 rounded-2xl bg-white/5 px-4 py-3 ${fs.status} text-white/90`}>
             {status}
           </div>
 
           {!finished && (
             <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-3">
               <div>
-                <p className="text-xs text-white/60">現在の問題</p>
-                <p className="mt-1 font-semibold">第{stageNumber}問 / ¥{currentPrizeValue.toLocaleString('ja-JP')}</p>
+                <p className={`${fs.infoLabel} text-white/60`}>現在の問題</p>
+                <p className={`mt-1 ${fs.infoValue} font-semibold`}>第{stageNumber}問 / ¥{currentPrizeValue.toLocaleString('ja-JP')}</p>
               </div>
               <div>
-                <p className="text-xs text-white/60">現在の保証金額</p>
-                <p className="mt-1 font-semibold">¥{safePrize.toLocaleString('ja-JP')}</p>
+                <p className={`${fs.infoLabel} text-white/60`}>現在の保証金額</p>
+                <p className={`mt-1 ${fs.infoValue} font-semibold`}>¥{safePrize.toLocaleString('ja-JP')}</p>
               </div>
               <div>
-                <p className="text-xs text-white/60">ドロップアウト時</p>
-                <p className="mt-1 font-semibold">¥{wonPrize.toLocaleString('ja-JP')}</p>
+                <p className={`${fs.infoLabel} text-white/60`}>ドロップアウト時</p>
+                <p className={`mt-1 ${fs.infoValue} font-semibold`}>¥{wonPrize.toLocaleString('ja-JP')}</p>
               </div>
             </div>
           )}
 
           <div className="mt-5">
-            <p className="mb-2 text-sm font-semibold text-amber-200">ライフラインを使用する</p>
-            <p className="mb-2 text-sm font-semibold text-amber-200">ドロップアウトする</p>
+            <p className={`mb-2 ${fs.lifelineLabel} font-semibold text-amber-200`}>ライフラインを使用する</p>
+            <p className={`mb-2 ${fs.lifelineLabel} font-semibold text-amber-200`}>ドロップアウトする</p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">50:50</button>
-              <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">テレフォン</button>
-              <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className="rounded-full bg-fuchsia-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">セイフティ</button>
-              <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className="rounded-full bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">ドロップアウト</button>
+              <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className={`rounded-full bg-sky-500 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>50:50</button>
+              <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className={`rounded-full bg-emerald-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>テレフォン</button>
+              <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className={`rounded-full bg-fuchsia-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>セイフティ</button>
+              <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className={`rounded-full bg-rose-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>ドロップアウト</button>
             </div>
           </div>
 
           {finished && (
             <div className="mt-5 rounded-[2rem] border border-amber-300/20 bg-amber-400/10 p-5 text-center">
-              <p className="text-4xl font-black text-amber-200 md:text-5xl">結果</p>
+              <p className={`${fs.resultHeading} font-black text-amber-200`}>結果</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl bg-white/10 px-4 py-4">
-                  <p className="text-sm text-white/70">今回獲得金額</p>
-                  <p className="mt-1 text-3xl font-black">¥{resultCurrentPrize.toLocaleString('ja-JP')}</p>
+                  <p className={`${fs.resultLabel} text-white/70`}>今回獲得金額</p>
+                  <p className={`mt-1 ${fs.resultValue} font-black`}>¥{resultCurrentPrize.toLocaleString('ja-JP')}</p>
                 </div>
                 <div className="rounded-xl bg-white/10 px-4 py-4">
-                  <p className="text-sm text-white/70">最高獲得金額</p>
-                  <p className="mt-1 text-3xl font-black">¥{resultBestPrize.toLocaleString('ja-JP')}</p>
+                  <p className={`${fs.resultLabel} text-white/70`}>最高獲得金額</p>
+                  <p className={`mt-1 ${fs.resultValue} font-black`}>¥{resultBestPrize.toLocaleString('ja-JP')}</p>
                 </div>
                 <div className="rounded-xl bg-white/10 px-4 py-4">
-                  <p className="text-sm text-white/70">総獲得金額</p>
-                  <p className="mt-1 text-3xl font-black">¥{resultTotalPrize.toLocaleString('ja-JP')}</p>
+                  <p className={`${fs.resultLabel} text-white/70`}>総獲得金額</p>
+                  <p className={`mt-1 ${fs.resultValue} font-black`}>¥{resultTotalPrize.toLocaleString('ja-JP')}</p>
                 </div>
               </div>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                <button onClick={restart} className="rounded-full bg-amber-400 px-5 py-2 font-semibold text-slate-950 hover:bg-amber-300">もう一度挑戦</button>
-                <button onClick={() => router.push('/game')} className="rounded-full bg-white/10 px-5 py-2 font-semibold hover:bg-white/20">ランキングを見る</button>
+                <button onClick={restart} className={`rounded-full bg-amber-400 px-5 py-2 ${fs.resultButton} font-semibold text-slate-950 hover:bg-amber-300`}>もう一度挑戦</button>
+                <button onClick={() => router.push('/game')} className={`rounded-full bg-white/10 px-5 py-2 ${fs.resultButton} font-semibold hover:bg-white/20`}>ランキングを見る</button>
               </div>
             </div>
           )}
@@ -502,8 +588,8 @@ export default function MillionairePage() {
 
           <aside className="space-y-4">
             <div className="rounded-[2rem] border border-white/10 bg-black/25 p-4 backdrop-blur">
-              <p className="text-sm text-white/60">賞金ラダー</p>
-              <ol className="mt-3 space-y-2 text-sm">
+              <p className={`${fs.ladderLabel} text-white/60`}>賞金ラダー</p>
+              <ol className={`mt-3 space-y-2 ${fs.ladderItem}`}>
                 {[...PRIZE_LADDER].reverse().map((prize, index) => {
                   const originalIndex = PRIZE_LADDER.length - 1 - index;
                   const active = currentStage === originalIndex && !finished;
@@ -531,8 +617,8 @@ export default function MillionairePage() {
             <div className="flex justify-center">
               <img src={FINAL_ANSWER_IMAGE} alt="ファイナルアンサー" className="h-28 w-28 rounded-full border border-amber-300/30 object-cover" />
             </div>
-            <h2 className="mt-4 text-center text-2xl font-black text-amber-300">ファイナルアンサー？</h2>
-            <button onClick={handleFinalAnswer} className="mt-5 w-full rounded-full bg-amber-400 px-5 py-3 text-lg font-black text-slate-950 hover:bg-amber-300">ファイナルアンサー</button>
+            <h2 className={`mt-4 text-center ${fs.modalTitle} font-black text-amber-300`}>ファイナルアンサー？</h2>
+            <button onClick={handleFinalAnswer} className={`mt-5 w-full rounded-full bg-amber-400 px-5 py-3 ${fs.modalButton} font-black text-slate-950 hover:bg-amber-300`}>ファイナルアンサー</button>
           </div>
         </div>
       )}
@@ -544,12 +630,12 @@ export default function MillionairePage() {
             <div className="flex justify-center">
               <img src={resultModal.isSuccess ? SUCCESS_IMAGE : FAILURE_IMAGE} alt="みのもんた" className="h-24 w-24 rounded-full border border-amber-300/30 object-cover" />
             </div>
-            <h2 className={`mt-4 text-center text-2xl font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
-            <p className="mt-3 text-center text-sm leading-6 text-white/80">{resultModal.body}</p>
+            <h2 className={`mt-4 text-center ${fs.modalTitle} font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
+            <p className={`mt-3 text-center ${fs.modalBody} text-white/80`}>{resultModal.body}</p>
             <div className="mt-5 flex flex-col gap-3">
-              <button onClick={handleModalPrimaryAction} className={`rounded-full px-5 py-3 text-base font-black ${resultModal.isSuccess ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-400 text-slate-950 hover:bg-rose-300'}`}>{resultModal.primaryLabel}</button>
+              <button onClick={handleModalPrimaryAction} className={`rounded-full px-5 py-3 ${fs.modalButton} font-black ${resultModal.isSuccess ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-400 text-slate-950 hover:bg-rose-300'}`}>{resultModal.primaryLabel}</button>
               {resultModal.secondaryLabel && (
-                <button onClick={handleModalSecondaryAction} className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-base font-semibold text-white hover:bg-white/20">{resultModal.secondaryLabel}</button>
+                <button onClick={handleModalSecondaryAction} className={`rounded-full border border-white/10 bg-white/10 px-5 py-3 ${fs.modalButton} font-semibold text-white hover:bg-white/20`}>{resultModal.secondaryLabel}</button>
               )}
             </div>
           </div>
