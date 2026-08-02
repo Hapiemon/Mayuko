@@ -17,44 +17,20 @@ interface RankingRow {
 
 type RankingGroupKey = 'millionaire_total' | 'millionaire_best' | 'brain_training' | 'spot_difference';
 
-function renderRankingSummary(row: RankingRow, gameType: RankingGroupKey) {
+function renderRankingScore(row: RankingRow, gameType: RankingGroupKey) {
   if (gameType === 'millionaire_total') {
-    return {
-      total: `総獲得: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
-      best: `最高獲得: ¥${Number(row.best_value).toLocaleString('ja-JP')}`,
-      extra: `クリア回数: ${row.extra_value}`,
-    };
+    return `¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`;
   }
-
   if (gameType === 'millionaire_best') {
-    return {
-      total: `最高獲得: ¥${Number(row.best_value).toLocaleString('ja-JP')}`,
-      best: `総獲得: ¥${Number(row.cumulative_value).toLocaleString('ja-JP')}`,
-      extra: `クリア回数: ${row.extra_value}`,
-    };
+    return `¥${Number(row.best_value).toLocaleString('ja-JP')}`;
   }
-
   if (gameType === 'brain_training') {
-    return {
-      total: `累計: ${row.cumulative_value}`,
-      best: `最高スコア: ${row.best_value}`,
-      extra: `最高Lv: ${row.extra_value}`,
-    };
+    return `${Number(row.cumulative_value).toLocaleString('ja-JP')}`;
   }
-
   if (gameType === 'spot_difference') {
-    return {
-      total: `累計打数: ${row.cumulative_value}`,
-      best: `最短打数: ${row.best_value}`,
-      extra: `成功回数: ${row.extra_value}`,
-    };
+    return `${Number(row.best_value).toLocaleString('ja-JP')}打`;
   }
-
-  return {
-    total: `累計: ${row.cumulative_value}`,
-    best: `ベスト: ${row.best_value}`,
-    extra: `補足: ${row.extra_value}`,
-  };
+  return `${row.cumulative_value}`;
 }
 
 const GAME_LABELS: Record<string, string> = {
@@ -219,24 +195,27 @@ export default function GameHubPage() {
               {grouped.map(({ key, rows }) => (
                 <div key={key} className="rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
                   <h3 className="text-lg font-semibold">{GAME_LABELS[key]}</h3>
-                  <div className="mt-3 space-y-2">
-                    {rows.length === 0 ? (
-                      <p className={`text-white/60 ${textSizeClass}`}>まだ記録がありません。</p>
-                    ) : (
-                      rows.map((row, index) => (
-                        <div key={row.id} className={`flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 ${textSizeClass}`}>
-                          <div>
-                            <p className="font-semibold">{index + 1}. {row.user_name}</p>
-                            <p className="text-white/60">{renderRankingSummary(row, key).total}</p>
-                          </div>
-                          <div className={`text-right text-white/70 ${secondaryTextSizeClass}`}>
-                            <p>{renderRankingSummary(row, key).best}</p>
-                            <p>{renderRankingSummary(row, key).extra}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <table className={`mt-3 w-full border-collapse ${textSizeClass}`}>
+                    <thead>
+                      <tr className="border-b border-white/20 text-left text-white/60">
+                        <th className="px-2 py-2 font-semibold">順位</th>
+                        <th className="px-2 py-2 font-semibold">名前</th>
+                        <th className="px-2 py-2 text-right font-semibold">スコア</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[0, 1, 2, 3, 4].map((index) => {
+                        const row = rows[index];
+                        return (
+                          <tr key={index} className="border-b border-white/10">
+                            <td className="whitespace-nowrap px-2 py-2 font-bold text-amber-300">{index + 1}</td>
+                            <td className="px-2 py-2 font-semibold">{row ? row.user_name : '---'}</td>
+                            <td className="whitespace-nowrap px-2 py-2 text-right">{row ? renderRankingScore(row, key) : '---'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               ))}
             </div>
