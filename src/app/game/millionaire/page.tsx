@@ -147,6 +147,8 @@ export default function MillionairePage() {
   const [confirmChoiceNumber, setConfirmChoiceNumber] = useState<number | null>(null);
   const [resultModal, setResultModal] = useState<ResultModalState>({ open: false, title: '', body: '', isSuccess: false, primaryLabel: '閉じる', primaryAction: 'close' });
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
+  const [helpTopic, setHelpTopic] = useState<'lifeline' | 'dropout' | null>(null);
+  const [introVisible, setIntroVisible] = useState(false);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -248,10 +250,18 @@ export default function MillionairePage() {
   const stageNumber = currentStage + 1;
   const currentPrizeValue = PRIZE_LADDER[currentStage] ?? 0;
   const safePrize = wonPrize >= SECOND_SAFETY_NET ? SECOND_SAFETY_NET : wonPrize >= FIRST_SAFETY_NET ? FIRST_SAFETY_NET : 0;
-  const isModalOpen = confirmChoiceNumber !== null || resultModal.open;
+  const isModalOpen = confirmChoiceNumber !== null || resultModal.open || helpTopic !== null;
   const fs = FONT_SIZE_CLASSES[messageFontSize];
 
   const getAnswerKey = (question: QuizQuestion) => question.answer_key ?? CHOICE_LABELS[(question.answer_index - 1) as 0 | 1 | 2 | 3];
+
+  useEffect(() => {
+    if (!currentQuestion || finished) return;
+    setIntroVisible(true);
+    const timer = setTimeout(() => setIntroVisible(false), 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestion?.id]);
 
   const visibleChoices = useMemo(() => {
     if (!currentQuestion) return [];
@@ -509,17 +519,33 @@ export default function MillionairePage() {
           ) : (
             <>
               <div className="rounded-[1.5rem] border border-amber-400/30 bg-[linear-gradient(135deg,_rgba(251,191,36,0.18),_rgba(15,23,42,0.1))] px-6 py-8 shadow-inner shadow-amber-400/10">
-                <p className={`${fs.questionMeta} text-amber-200`}>第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}</p>
-                <h2 className={`mt-4 ${fs.questionTitle} font-bold leading-relaxed`}>{currentQuestion.question}</h2>
+                {introVisible ? (
+                  <div className="flex min-h-[8rem] items-center justify-center">
+                    <p className={`${fs.resultHeading} animate-[introZoom_0.6s_ease-out] text-center font-black text-amber-300`}>
+                      第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className={`${fs.questionMeta} text-amber-200`}>第{currentQuestion.question_number ?? stageNumber}問 / ¥{Number(currentQuestion.prize_amount ?? PRIZE_LADDER[currentStage] ?? 0).toLocaleString('ja-JP')}</p>
+                    <h2 className={`mt-4 ${fs.questionTitle} font-bold leading-relaxed`}>{currentQuestion.question}</h2>
+                  </>
+                )}
               </div>
+              <style>{`
+                @keyframes introZoom {
+                  0% { transform: scale(0.4); opacity: 0; }
+                  100% { transform: scale(1); opacity: 1; }
+                }
+              `}</style>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {visibleChoices.map((choice) => (
                   <button
                     key={choice.number}
-                    disabled={choice.hidden || finished}
+                    disabled={choice.hidden || finished || introVisible}
                     onClick={() => openConfirm(choice.number)}
-                    className={`rounded-2xl border px-4 py-4 text-left transition ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : 'border-blue-300/30 bg-blue-500/10 hover:border-amber-300/60 hover:bg-amber-500/15'}`}
+                    className={`rounded-2xl border px-4 py-4 text-left transition-transform duration-100 ${choice.hidden ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/20' : introVisible ? 'border-blue-300/30 bg-blue-500/10 opacity-40' : 'border-blue-300/30 bg-blue-500/10 active:scale-95 active:border-amber-300 active:bg-amber-500/30'}`}
                   >
                     <p className={`${fs.choiceLabel} text-amber-200`}>{choice.label}</p>
                     <p className={`mt-1 ${fs.choiceText} font-semibold`}>{choice.hidden ? '---' : choice.text}</p>
@@ -551,12 +577,29 @@ export default function MillionairePage() {
           )}
 
           <div className="mt-5">
-            <p className={`mb-2 ${fs.lifelineLabel} font-semibold text-amber-200`}>ライフラインを使用する</p>
-            <p className={`mb-2 ${fs.lifelineLabel} font-semibold text-amber-200`}>ドロップアウトする</p>
+            <div className="mb-2 flex items-center gap-2">
+              <p className={`${fs.lifelineLabel} font-semibold text-amber-200`}>ライフラインを使用する</p>
+              <button
+                onClick={() => setHelpTopic('lifeline')}
+                aria-label="ライフラインの説明"
+                className={`flex h-6 w-6 items-center justify-center rounded-full bg-white/15 ${fs.badge} font-bold text-amber-200 hover:bg-white/25`}
+              >？</button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className={`rounded-full bg-sky-500 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>50:50</button>
               <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className={`rounded-full bg-emerald-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>テレフォン</button>
               <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className={`rounded-full bg-fuchsia-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>セイフティ</button>
+            </div>
+
+            <div className="mb-2 mt-5 flex items-center gap-2">
+              <p className={`${fs.lifelineLabel} font-semibold text-amber-200`}>ドロップアウトする</p>
+              <button
+                onClick={() => setHelpTopic('dropout')}
+                aria-label="ドロップアウトの説明"
+                className={`flex h-6 w-6 items-center justify-center rounded-full bg-white/15 ${fs.badge} font-bold text-amber-200 hover:bg-white/25`}
+              >？</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button onClick={handleDropout} disabled={!currentQuestion || finished || answeredStage === currentStage} className={`rounded-full bg-rose-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>ドロップアウト</button>
             </div>
           </div>
@@ -638,6 +681,42 @@ export default function MillionairePage() {
                 <button onClick={handleModalSecondaryAction} className={`rounded-full border border-white/10 bg-white/10 px-5 py-3 ${fs.modalButton} font-semibold text-white hover:bg-white/20`}>{resultModal.secondaryLabel}</button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {helpTopic !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm" onClick={() => setHelpTopic(null)}>
+          <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-amber-500/10" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setHelpTopic(null)} className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xl text-white/80 hover:bg-white/20">×</button>
+            {helpTopic === 'lifeline' ? (
+              <>
+                <h2 className={`${fs.modalTitle} font-black text-amber-300`}>ライフラインとは？</h2>
+                <div className={`mt-4 space-y-4 ${fs.modalBody} text-white/85`}>
+                  <div>
+                    <p className="font-bold text-sky-300">50:50</p>
+                    <p className="mt-1">4つの選択肢のうち、不正解の選択肢を2つ消して、正解を選びやすくします。1ゲームに1回だけ使えます。</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-emerald-300">テレフォン</p>
+                    <p className="mt-1">不正解の選択肢をすべて消して、正解候補を1つに絞ります。1ゲームに1回だけ使えます。</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-fuchsia-300">セイフティ</p>
+                    <p className="mt-1">使用すると次に不正解になっても1回だけ無効になり、同じ問題にもう一度挑戦できます。1ゲームに1回だけ使えます。</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className={`${fs.modalTitle} font-black text-rose-300`}>ドロップアウトとは？</h2>
+                <div className={`mt-4 space-y-3 ${fs.modalBody} text-white/85`}>
+                  <p>現在の問題に回答せず、その時点で獲得している賞金を持ち帰ってゲームを終了することです。</p>
+                  <p>間違えるとセーフティネット（¥100,000 / ¥1,000,000）の金額まで賞金が下がってしまうため、自信がないときはドロップアウトして賞金を確保するのが有効な戦略です。</p>
+                </div>
+              </>
+            )}
+            <button onClick={() => setHelpTopic(null)} className={`mt-5 w-full rounded-full bg-white/10 px-5 py-3 ${fs.modalButton} font-semibold text-white hover:bg-white/20`}>閉じる</button>
           </div>
         </div>
       )}
