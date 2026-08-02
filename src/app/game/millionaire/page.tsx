@@ -1,6 +1,6 @@
 'use client';
 
-import { FAILURE_IMAGE, FINAL_ANSWER_IMAGE, SUCCESS_IMAGE, SUSPENSE_IMAGE } from './character-images';
+import { FAILURE_IMAGE, FINAL_ANSWER_IMAGE, SUCCESS_IMAGE, SUSPENSE_15_IMAGE, SUSPENSE_IMAGE } from './character-images';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -337,7 +337,8 @@ export default function MillionairePage() {
     const isCorrect = choiceNumber === currentQuestion.answer_index;
 
     setSuspenseOpen(true);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const suspenseMs = stageNumber >= 15 ? 5000 : stageNumber >= 11 ? 3000 : stageNumber >= 6 ? 2000 : 1000;
+    await new Promise((resolve) => setTimeout(resolve, suspenseMs));
     setSuspenseOpen(false);
 
     if (isCorrect) {
@@ -643,8 +644,9 @@ export default function MillionairePage() {
                   const active = currentStage === originalIndex && !finished;
                   const cleared = wonPrize >= prize;
                   const isSafetyNet = prize === FIRST_SAFETY_NET || prize === SECOND_SAFETY_NET;
+                  const isMilestone = (originalIndex + 1) % 5 === 0;
                   return (
-                    <li key={prize} className={`rounded-xl px-3 py-2 ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
+                    <li key={prize} className={`rounded-xl px-3 py-2 ${isMilestone ? 'border-2 border-orange-400' : ''} ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
                       <div className="flex items-center justify-between gap-2">
                         <span>{originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}</span>
                         {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">保証金額</span>}
@@ -675,7 +677,7 @@ export default function MillionairePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 text-center shadow-2xl shadow-amber-500/10">
             <div className="flex justify-center">
-              <img src={SUSPENSE_IMAGE} alt="みのもんた" className="max-h-64 w-auto rounded-xl object-contain" />
+              <img src={stageNumber >= 15 ? SUSPENSE_15_IMAGE : SUSPENSE_IMAGE} alt="みのもんた" className="max-h-64 w-auto rounded-xl object-contain" />
             </div>
             <p className={`mt-6 ${fs.modalTitle} font-black tracking-widest text-amber-300`}>.............</p>
           </div>
