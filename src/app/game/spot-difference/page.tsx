@@ -472,7 +472,9 @@ export default function SpotDifferencePage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className={`${secondaryTextSizeClass} text-emerald-200`}>現在の打数</p>
-              <p className="text-3xl font-black">{strokes}</p>
+              <p className={strokes <= 1 ? 'text-2xl font-black' : 'text-3xl font-black'}>
+                {strokes === 0 ? '鼻が痒すぎる！' : strokes === 1 ? '初回' : strokes - 1}
+              </p>
             </div>
             <div className={`text-right text-white/80 ${secondaryTextSizeClass}`}>
               <p>最短打数: {bestScore === 0 ? '-' : bestScore}</p>
