@@ -675,14 +675,6 @@ export default function SettingsPage() {
             )}
           </div>
           )}
-
-          {/* その他の情報 */}
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-gray-300">
-            <h2 className="text-lg font-semibold mb-2 text-gray-800">アカウント情報</h2>
-            <p className="text-sm text-gray-600">
-              現在のユーザー: <span className="font-semibold text-violet-600">{currentUser}</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>
