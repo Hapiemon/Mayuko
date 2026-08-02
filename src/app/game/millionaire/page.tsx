@@ -647,7 +647,7 @@ export default function MillionairePage() {
                     <li key={prize} className={`rounded-xl px-3 py-2 ${active ? 'bg-amber-400 text-slate-950' : cleared ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/5 text-white/80'}`}>
                       <div className="flex items-center justify-between gap-2">
                         <span>{originalIndex + 1}. ¥{prize.toLocaleString('ja-JP')}</span>
-                        {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">セーフティ</span>}
+                        {isSafetyNet && <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-semibold">保証金額</span>}
                       </div>
                     </li>
                   );
