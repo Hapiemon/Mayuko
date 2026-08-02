@@ -176,10 +176,10 @@ export default function GameHubPage() {
             <h2 className="mt-2 text-2xl font-bold">クイズ$ミリオネア</h2>
           </Link>
           <Link href="/game/brain-training" className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-5 shadow-lg shadow-cyan-500/10 transition hover:-translate-y-1 hover:bg-cyan-400/15">
-            <h2 className="mt-2 text-2xl font-bold">神経衰弱</h2>
+            <h2 className="mt-2 text-2xl font-bold">神経衰弱ゲーム</h2>
           </Link>
           <Link href="/game/spot-difference" className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 shadow-lg shadow-emerald-500/10 transition hover:-translate-y-1 hover:bg-emerald-400/15">
-            <h2 className="mt-2 text-2xl font-bold">鼻ほじり</h2>
+            <h2 className="mt-2 text-2xl font-bold">鼻ほじりゲーム</h2>
           </Link>
         </section>
 
