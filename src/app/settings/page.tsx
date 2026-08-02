@@ -490,7 +490,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">登録済み問題</h2>
-                <p className="text-sm text-gray-600">何問目かごとに確認できます。</p>
+                <p className="text-sm text-gray-600">検索結果{quizQuestions.length}件です。</p>
               </div>
               <select
                 value={questionNumberFilter}
