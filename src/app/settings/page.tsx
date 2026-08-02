@@ -59,6 +59,11 @@ export default function SettingsPage() {
   const [quizMessage, setQuizMessage] = useState('');
   const [questionNumberFilter, setQuestionNumberFilter] = useState<number | 'all'>('all');
   const [form, setForm] = useState(emptyForm);
+  const [sortKey, setSortKey] = useState<'question_number' | 'prize_amount' | 'question' | 'answer'>('question_number');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [rowEditId, setRowEditId] = useState<number | null>(null);
+  const [rowForm, setRowForm] = useState(emptyForm);
+  const [savingRow, setSavingRow] = useState(false);
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -214,6 +219,9 @@ export default function SettingsPage() {
       if (editingId === id) {
         resetQuizForm();
       }
+      if (rowEditId === id) {
+        cancelRowEdit();
+      }
       setQuizMessage('✓ 問題を削除しました');
       await fetchQuizQuestions();
     } catch (err) {
@@ -223,8 +231,8 @@ export default function SettingsPage() {
   };
 
   const startEdit = (item: QuizQuestion) => {
-    setEditingId(item.id);
-    setForm({
+    setRowEditId(item.id);
+    setRowForm({
       question: item.question,
       choice1: item.choice_1,
       choice2: item.choice_2,
@@ -234,8 +242,79 @@ export default function SettingsPage() {
       questionNumber: item.question_number ?? 1,
       prizeAmount: item.prize_amount ?? PRIZE_BY_QUESTION_NUMBER[item.question_number ?? 1],
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const cancelRowEdit = () => {
+    setRowEditId(null);
+    setRowForm(emptyForm);
+  };
+
+  const saveRowEdit = async () => {
+    if (rowEditId === null) return;
+    setSavingRow(true);
+    setQuizMessage('');
+    try {
+      const payload = {
+        id: rowEditId,
+        question: rowForm.question.trim(),
+        choices: [rowForm.choice1.trim(), rowForm.choice2.trim(), rowForm.choice3.trim(), rowForm.choice4.trim()],
+        answerKey: rowForm.answerKey,
+        questionNumber: Number(rowForm.questionNumber),
+        prizeAmount: Number(rowForm.prizeAmount),
+      };
+      if (!payload.question || payload.choices.some((choice) => !choice)) {
+        throw new Error('empty');
+      }
+      const res = await fetch('/api/quiz-questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save');
+      }
+      setQuizMessage('✓ 問題を更新しました');
+      cancelRowEdit();
+      await fetchQuizQuestions();
+    } catch (err) {
+      console.error(err);
+      setQuizMessage('✗ 問題の更新に失敗しました');
+    } finally {
+      setSavingRow(false);
+    }
+  };
+
+  const handleSort = (key: 'question_number' | 'prize_amount' | 'question' | 'answer') => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const getAnswerKeyOf = (item: QuizQuestion) =>
+    item.answer_key ?? ({ 1: 'A', 2: 'B', 3: 'C', 4: 'D' }[item.answer_index as 1 | 2 | 3 | 4]);
+
+  const sortedQuestions = [...quizQuestions].sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === 'question_number') {
+      cmp = (a.question_number ?? 0) - (b.question_number ?? 0);
+    } else if (sortKey === 'prize_amount') {
+      cmp = Number(a.prize_amount ?? 0) - Number(b.prize_amount ?? 0);
+    } else if (sortKey === 'question') {
+      cmp = a.question.localeCompare(b.question, 'ja');
+    } else {
+      cmp = String(getAnswerKeyOf(a)).localeCompare(String(getAnswerKeyOf(b)));
+    }
+    if (cmp === 0) {
+      cmp = a.id - b.id;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  const sortIndicator = (key: 'question_number' | 'prize_amount' | 'question' | 'answer') =>
+    sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">読込中...</div>;
@@ -430,41 +509,143 @@ export default function SettingsPage() {
             ) : quizQuestions.length === 0 ? (
               <p className="text-sm text-gray-500">問題がまだありません。</p>
             ) : (
-              <div className="space-y-3">
-                {quizQuestions.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold text-violet-600">第{item.question_number ?? 0}問 / ¥{Number(item.prize_amount ?? 0).toLocaleString('ja-JP')} / 正解: {item.answer_key ?? ({ 1: 'A', 2: 'B', 3: 'C', 4: 'D' }[item.answer_index as 1 | 2 | 3 | 4])}</p>
-                        <p className="mt-1 text-sm font-semibold text-gray-900 whitespace-pre-wrap">{item.question}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEdit(item)}
-                          className="rounded-full bg-violet-500 px-3 py-1 text-xs font-semibold text-white hover:bg-violet-600"
-                        >
-                          編集
-                        </button>
-                        <button
-                          onClick={() => handleQuizDelete(item.id)}
-                          className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600"
-                        >
-                          削除
-                        </button>
-                      </div>
-                    </div>
-                    <ol className="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-700 sm:grid-cols-2">
-                      {[item.choice_1, item.choice_2, item.choice_3, item.choice_4].map((choice, index) => (
-                        <li
-                          key={`${item.id}-${index}`}
-                          className={`rounded-lg px-3 py-2 ${item.answer_index === index + 1 ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'bg-white'}`}
-                        >
-                          {'ABCD'[index]}. {choice}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-violet-200 text-left text-xs text-gray-600">
+                      <th className="cursor-pointer select-none px-2 py-2 hover:text-violet-600" onClick={() => handleSort('question_number')}>
+                        問題{sortIndicator('question_number')}
+                      </th>
+                      <th className="cursor-pointer select-none px-2 py-2 hover:text-violet-600" onClick={() => handleSort('prize_amount')}>
+                        賞金{sortIndicator('prize_amount')}
+                      </th>
+                      <th className="cursor-pointer select-none px-2 py-2 hover:text-violet-600" onClick={() => handleSort('question')}>
+                        問題文{sortIndicator('question')}
+                      </th>
+                      <th className="cursor-pointer select-none px-2 py-2 hover:text-violet-600" onClick={() => handleSort('answer')}>
+                        正解{sortIndicator('answer')}
+                      </th>
+                      <th className="px-2 py-2">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedQuestions.map((item) => (
+                      rowEditId === item.id ? (
+                        <tr key={item.id} className="border-b border-gray-200 bg-violet-50">
+                          <td colSpan={5} className="px-2 py-3">
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">問題文</label>
+                                <textarea
+                                  value={rowForm.question}
+                                  onChange={(e) => setRowForm((prev) => ({ ...prev, question: e.target.value }))}
+                                  rows={2}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {[1, 2, 3, 4].map((num) => (
+                                  <div key={num}>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">選択肢{'ABCD'[num - 1]}</label>
+                                    <input
+                                      value={rowForm[`choice${num}` as keyof typeof rowForm] as string}
+                                      onChange={(e) => setRowForm((prev) => ({ ...prev, [`choice${num}`]: e.target.value }))}
+                                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">正解</label>
+                                  <select
+                                    value={rowForm.answerKey}
+                                    onChange={(e) => setRowForm((prev) => ({ ...prev, answerKey: e.target.value as 'A' | 'B' | 'C' | 'D' }))}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                                  >
+                                    {['A', 'B', 'C', 'D'].map((key) => (
+                                      <option key={key} value={key}>{key}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">何問目</label>
+                                  <select
+                                    value={rowForm.questionNumber}
+                                    onChange={(e) => {
+                                      const questionNumber = Number(e.target.value);
+                                      setRowForm((prev) => ({ ...prev, questionNumber, prizeAmount: PRIZE_BY_QUESTION_NUMBER[questionNumber] }));
+                                    }}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                                  >
+                                    {Array.from({ length: 15 }, (_, i) => i + 1).map((questionNumber) => (
+                                      <option key={questionNumber} value={questionNumber}>第{questionNumber}問</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">賞金</label>
+                                  <input
+                                    value={rowForm.prizeAmount.toLocaleString('ja-JP')}
+                                    readOnly
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={saveRowEdit}
+                                  disabled={savingRow}
+                                  className="rounded-full bg-violet-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-violet-600 disabled:opacity-50"
+                                >
+                                  {savingRow ? '更新中...' : '更新'}
+                                </button>
+                                <button
+                                  onClick={cancelRowEdit}
+                                  className="rounded-full bg-gray-200 px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+                                >
+                                  キャンセル
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr key={item.id} className="border-b border-gray-200 align-top hover:bg-gray-50">
+                          <td className="whitespace-nowrap px-2 py-2 font-semibold text-violet-600">第{item.question_number ?? 0}問</td>
+                          <td className="whitespace-nowrap px-2 py-2 text-gray-700">¥{Number(item.prize_amount ?? 0).toLocaleString('ja-JP')}</td>
+                          <td className="px-2 py-2 text-gray-900">
+                            <p className="whitespace-pre-wrap">{item.question}</p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {[item.choice_1, item.choice_2, item.choice_3, item.choice_4].map((choice, index) => (
+                                <span key={index} className={item.answer_index === index + 1 ? 'font-bold text-emerald-600' : ''}>
+                                  {'ABCD'[index]}. {choice}{index < 3 ? ' / ' : ''}
+                                </span>
+                              ))}
+                            </p>
+                          </td>
+                          <td className="whitespace-nowrap px-2 py-2 font-bold text-emerald-600">{getAnswerKeyOf(item)}</td>
+                          <td className="whitespace-nowrap px-2 py-2">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => startEdit(item)}
+                                className="rounded-full bg-violet-500 px-3 py-1 text-xs font-semibold text-white hover:bg-violet-600"
+                              >
+                                編集
+                              </button>
+                              <button
+                                onClick={() => handleQuizDelete(item.id)}
+                                className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600"
+                              >
+                                削除
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
