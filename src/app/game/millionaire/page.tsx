@@ -395,16 +395,14 @@ export default function MillionairePage() {
     }
 
     await finishGame(
-      `不正解… 正解は ${getAnswerKey(currentQuestion)} でした。
-      獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
+      `不正解… 正解は ${getAnswerKey(currentQuestion)} でした。\n獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
       safePrize,
       false,
     );
     setResultModal({
       open: true,
       title: '残念…!',
-      body: `正解は ${getAnswerKey(currentQuestion)} でした。
-      獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
+      body: `正解は ${getAnswerKey(currentQuestion)} でした。\n獲得金額は ¥${safePrize.toLocaleString('ja-JP')} です。`,
       isSuccess: false,
       primaryLabel: 'リザルト画面',
       primaryAction: 'result',
@@ -697,7 +695,7 @@ export default function MillionairePage() {
               <img src={resultModal.isSuccess ? SUCCESS_IMAGE : FAILURE_IMAGE} alt="みのもんた" className="max-h-52 w-auto rounded-xl object-contain" />
             </div>
             <h2 className={`mt-4 text-center ${fs.modalTitle} font-black ${resultModal.isSuccess ? 'text-amber-300' : 'text-rose-300'}`}>{resultModal.title}</h2>
-            <p className={`mt-3 text-center ${fs.modalBody} text-white/80`}>{resultModal.body}</p>
+            <p className={`mt-3 whitespace-pre-line text-center ${fs.modalBody} text-white/80`}>{resultModal.body}</p>
             <div className="mt-5 flex flex-col gap-3">
               <button onClick={handleModalPrimaryAction} className={`rounded-full px-5 py-3 ${fs.modalButton} font-black ${resultModal.isSuccess ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-400 text-slate-950 hover:bg-rose-300'}`}>{resultModal.primaryLabel}</button>
               {resultModal.secondaryLabel && (
