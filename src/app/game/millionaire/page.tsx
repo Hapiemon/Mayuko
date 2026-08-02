@@ -568,10 +568,6 @@ export default function MillionairePage() {
             </>
           )}
 
-          <div className={`mt-5 rounded-2xl bg-white/5 px-4 py-3 ${fs.status} text-white/90`}>
-            {status}
-          </div>
-
           {!finished && (
             <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-3">
               <div>
