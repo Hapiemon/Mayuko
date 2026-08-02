@@ -64,6 +64,7 @@ export default function SettingsPage() {
   const [rowEditId, setRowEditId] = useState<number | null>(null);
   const [rowForm, setRowForm] = useState(emptyForm);
   const [savingRow, setSavingRow] = useState(false);
+  const [adminTab, setAdminTab] = useState<'mayuko' | 'ranking'>('mayuko');
 
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
@@ -439,43 +440,61 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* まゆこ未読リセット */}
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-violet-600">
-            <h2 className="text-lg font-semibold mb-2 text-gray-800">まゆこ既読管理</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              すべてのメッセージをまゆこ未読状態にリセットします。
-            </p>
-            <button
-              onClick={handleClearMayukoRead}
-              disabled={isClearing}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              {isClearing ? '処理中...' : 'すべて未読にする'}
-            </button>
-            {message && (
-              <p className={`text-sm mt-3 ${message.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
-                {message}
-              </p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-            <h2 className="text-lg font-semibold mb-2 text-gray-800">ゲームランキング管理</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              全ユーザーの全ゲーム記録を削除し、ランキングを初期化します。
-            </p>
-            <button
-              onClick={handleClearAllGameRankings}
-              disabled={isClearingRankings}
-              className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              {isClearingRankings ? '処理中...' : 'ランキングを初期化する'}
-            </button>
-            {rankingMessage && (
-              <p className={`text-sm mt-3 ${rankingMessage.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
-                {rankingMessage}
-              </p>
-            )}
+          {/* まゆこ既読管理 / ゲームランキング管理（タブ切替） */}
+          <div className={`bg-white rounded-lg shadow border-l-4 ${adminTab === 'mayuko' ? 'border-violet-600' : 'border-red-500'}`}>
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setAdminTab('mayuko')}
+                className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${adminTab === 'mayuko' ? 'border-b-2 border-violet-600 text-violet-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                まゆこ既読管理
+              </button>
+              <button
+                onClick={() => setAdminTab('ranking')}
+                className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${adminTab === 'ranking' ? 'border-b-2 border-red-500 text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                ゲームランキング管理
+              </button>
+            </div>
+            <div className="p-4">
+              {adminTab === 'mayuko' ? (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">
+                    すべてのメッセージをまゆこ未読状態にリセットします。
+                  </p>
+                  <button
+                    onClick={handleClearMayukoRead}
+                    disabled={isClearing}
+                    className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    {isClearing ? '処理中...' : 'すべて未読にする'}
+                  </button>
+                  {message && (
+                    <p className={`text-sm mt-3 ${message.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
+                      {message}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">
+                    全ユーザーの全ゲーム記録を削除し、ランキングを初期化します。
+                  </p>
+                  <button
+                    onClick={handleClearAllGameRankings}
+                    disabled={isClearingRankings}
+                    className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    {isClearingRankings ? '処理中...' : 'ランキングを初期化する'}
+                  </button>
+                  {rankingMessage && (
+                    <p className={`text-sm mt-3 ${rankingMessage.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
+                      {rankingMessage}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* その他の情報 */}
