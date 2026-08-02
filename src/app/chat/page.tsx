@@ -506,8 +506,7 @@ export default function ChatPage() {
                 }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
               >
-                <span>ランキング</span>
-                <span>🏆</span>
+                <span>🤩ランキング🤩</span>
               </button>
               <button
                 onClick={() => {
@@ -516,8 +515,7 @@ export default function ChatPage() {
                 }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
               >
-                <span>ミリオネア</span>
-                <span>💰</span>
+                <span>クイズ$ミリオネア</span>
               </button>
               <button
                 onClick={() => {
@@ -526,8 +524,7 @@ export default function ChatPage() {
                 }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
               >
-                <span>脳トレ</span>
-                <span>🧠</span>
+                <span>神経衰弱ゲーム</span>
               </button>
               <button
                 onClick={() => {
@@ -536,8 +533,7 @@ export default function ChatPage() {
                 }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold hover:bg-violet-50"
               >
-                <span>鼻ほじり</span>
-                <span>👃</span>
+                <span>鼻ほじりゲーム</span>
               </button>
             </div>
           )}
