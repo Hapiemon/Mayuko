@@ -424,7 +424,8 @@ export default function MillionairePage() {
   };
 
   const useFifty = () => {
-    if (!currentQuestion || lifelines.fiftyUsed || lifelines.phoneUsed) return;
+    // hiddenChoices は問題ごとにリセットされるため、テレフォンを同じ問題で使った場合のみ50:50をブロックする
+    if (!currentQuestion || lifelines.fiftyUsed || hiddenChoices.length > 0) return;
     const wrongChoices = [1, 2, 3, 4].filter((num) => num !== currentQuestion.answer_index);
     const shuffled = [...wrongChoices].sort(() => Math.random() - 0.5);
     setHiddenChoices(shuffled.slice(0, 2));
@@ -613,7 +614,7 @@ export default function MillionairePage() {
               >？</button>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={useFifty} disabled={lifelines.fiftyUsed || !currentQuestion || finished} className={`rounded-full bg-sky-500 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>50:50</button>
+              <button onClick={useFifty} disabled={lifelines.fiftyUsed || hiddenChoices.length > 0 || !currentQuestion || finished} className={`rounded-full bg-sky-500 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>50:50</button>
               <button onClick={usePhone} disabled={lifelines.phoneUsed || !currentQuestion || finished} className={`rounded-full bg-emerald-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>テレフォン</button>
               <button onClick={useSafety} disabled={lifelines.safetyUsed || lifelines.safetyArmed || finished} className={`rounded-full bg-fuchsia-400 px-4 py-2 ${fs.lifelineButton} font-semibold text-slate-950 disabled:opacity-40`}>セイフティ</button>
             </div>
