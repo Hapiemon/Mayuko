@@ -81,6 +81,7 @@ export default function ChatPage() {
   const [sendingCallInvite, setSendingCallInvite] = useState(false);
 
   const KNOWN_USERS = ['まゆこ', 'だいや', 'あつと', 'せれな', 'るちえ'];
+  const inCallRef = useRef(false);
   const callSessionIdRef = useRef('');
   const callPollTimerRef = useRef<number | null>(null);
   const heartbeatTimerRef = useRef<number | null>(null);
@@ -668,7 +669,7 @@ export default function ChatPage() {
   };
 
   const syncCallState = async () => {
-    if (!inCall || !callSessionIdRef.current) return;
+    if (!inCallRef.current || !callSessionIdRef.current) return;
 
     try {
       const res = await fetch(
@@ -719,6 +720,7 @@ export default function ChatPage() {
 
   const leaveCall = async (notifyServer = true) => {
     stopCallLoops();
+    inCallRef.current = false;
 
     if (notifyServer && callSessionIdRef.current) {
       try {
@@ -830,6 +832,7 @@ export default function ChatPage() {
       latestSignalIdRef.current = 0;
       offeredSessionsRef.current.clear();
       setMicEnabled(false);
+      inCallRef.current = true;
       setInCall(true);
       setCallMenuOpen(true);
 
