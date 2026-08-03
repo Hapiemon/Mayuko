@@ -605,7 +605,7 @@ export default function ChatPage() {
                 }}
                 className={`flex w-full items-center justify-between rounded-xl text-left font-semibold bg-yellow-400 text-slate-900 hover:bg-yellow-300 ${gameMenuButtonSizeClass}`}
               >
-                <span>🤩ランキング🤩</span>
+                <span>ランキング</span>
               </button>
               <button
                 onClick={() => {
