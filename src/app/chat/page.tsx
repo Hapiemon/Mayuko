@@ -104,6 +104,8 @@ export default function ChatPage() {
   const speakerGainNodesRef = useRef<Record<string, GainNode>>({});
   const latestSignalIdRef = useRef(0);
   const offeredSessionsRef = useRef<Set<string>>(new Set());
+  const makingOfferSessionsRef = useRef<Set<string>>(new Set());
+  const ignoreOfferSessionsRef = useRef<Set<string>>(new Set());
   const pendingIceCandidatesRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const callChannelRef = useRef<RealtimeChannel | null>(null);
   const speakingAudioContextRef = useRef<AudioContext | null>(null);
@@ -612,7 +614,15 @@ export default function ChatPage() {
     delete pendingIceCandidatesRef.current[remoteSessionId];
     unregisterSpeakingStream(remoteSessionId);
     offeredSessionsRef.current.delete(remoteSessionId);
+    makingOfferSessionsRef.current.delete(remoteSessionId);
+    ignoreOfferSessionsRef.current.delete(remoteSessionId);
     refreshRemoteAudios();
+  };
+
+  const isPolitePeer = (remoteSessionId: string) => {
+    const mySessionId = callSessionIdRef.current;
+    if (!mySessionId) return false;
+    return mySessionId > remoteSessionId;
   };
 
   const flushPendingIceCandidates = async (remoteSessionId: string, peer: RTCPeerConnection) => {
@@ -770,17 +780,22 @@ export default function ChatPage() {
     if (!callSessionIdRef.current) return;
     if (callSessionIdRef.current <= remoteSessionId) return;
     if (offeredSessionsRef.current.has(remoteSessionId)) return;
+    if (makingOfferSessionsRef.current.has(remoteSessionId)) return;
 
     const peer = ensurePeer(remoteSessionId);
     if (peer.signalingState !== 'stable') return;
+    if (peer.connectionState === 'closed' || peer.connectionState === 'failed') return;
 
     try {
+      makingOfferSessionsRef.current.add(remoteSessionId);
       offeredSessionsRef.current.add(remoteSessionId);
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
       await sendSignal(remoteSessionId, 'offer', offer);
     } catch {
       offeredSessionsRef.current.delete(remoteSessionId);
+    } finally {
+      makingOfferSessionsRef.current.delete(remoteSessionId);
     }
   };
 
@@ -792,21 +807,39 @@ export default function ChatPage() {
 
     try {
       if (signal.signal_type === 'offer') {
+        const offerCollision = makingOfferSessionsRef.current.has(signal.from_session_id) || peer.signalingState !== 'stable';
+        const shouldIgnoreOffer = !isPolitePeer(signal.from_session_id) && offerCollision;
+
+        if (shouldIgnoreOffer) {
+          ignoreOfferSessionsRef.current.add(signal.from_session_id);
+          return;
+        }
+
+        ignoreOfferSessionsRef.current.delete(signal.from_session_id);
+
+        if (offerCollision && peer.signalingState !== 'stable') {
+          await peer.setLocalDescription({ type: 'rollback' });
+        }
+
         await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
         await flushPendingIceCandidates(signal.from_session_id, peer);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         await sendSignal(signal.from_session_id, 'answer', answer);
+        offeredSessionsRef.current.delete(signal.from_session_id);
         return;
       }
 
       if (signal.signal_type === 'answer') {
+        if (ignoreOfferSessionsRef.current.has(signal.from_session_id)) return;
         await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
         await flushPendingIceCandidates(signal.from_session_id, peer);
+        offeredSessionsRef.current.delete(signal.from_session_id);
         return;
       }
 
       if (signal.signal_type === 'ice') {
+        if (ignoreOfferSessionsRef.current.has(signal.from_session_id)) return;
         if (signal.payload) {
           if (!peer.remoteDescription) {
             pendingIceCandidatesRef.current[signal.from_session_id] = [
