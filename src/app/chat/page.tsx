@@ -280,6 +280,43 @@ export default function ChatPage() {
 
   const gameMenuWidthClass = messageFontSize === 'large' ? 'w-72' : 'w-56';
 
+  const callMenuWidthClass = messageFontSize === 'large' ? 'w-96' : messageFontSize === 'small' ? 'w-72' : 'w-80';
+
+  const callMenuTitleClass =
+    messageFontSize === 'small'
+      ? 'text-xs'
+      : messageFontSize === 'large'
+        ? 'text-2xl'
+        : 'text-sm';
+
+  const callMenuSubClass =
+    messageFontSize === 'small'
+      ? 'text-[11px]'
+      : messageFontSize === 'large'
+        ? 'text-lg'
+        : 'text-xs';
+
+  const callMenuListClass =
+    messageFontSize === 'small'
+      ? 'text-[11px]'
+      : messageFontSize === 'large'
+        ? 'text-lg'
+        : 'text-xs';
+
+  const callMenuButtonClass =
+    messageFontSize === 'small'
+      ? 'px-3 py-1.5 text-xs'
+      : messageFontSize === 'large'
+        ? 'px-5 py-3 text-xl'
+        : 'px-4 py-2 text-xs';
+
+  const callMenuBadgeClass =
+    messageFontSize === 'small'
+      ? 'text-[9px] px-1.5 py-0.5'
+      : messageFontSize === 'large'
+        ? 'text-sm px-3 py-1'
+        : 'text-[10px] px-2 py-0.5';
+
   useEffect(() => {
     const user = sessionStorage.getItem('chatUser');
     if (!user) {
@@ -1184,35 +1221,35 @@ export default function ChatPage() {
           )}
 
           {callMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl bg-white p-3 text-gray-800 shadow-2xl ring-1 ring-black/10">
+            <div className={`absolute right-0 top-full z-50 mt-2 ${callMenuWidthClass} rounded-2xl bg-white p-3 text-gray-800 shadow-2xl ring-1 ring-black/10`}>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-bold text-gray-800">通話ルーム</p>
-                <p className="text-xs text-gray-500">{callParticipants.length}/{CALL_MAX_PARTICIPANTS} 人</p>
+                <p className={`${callMenuTitleClass} font-bold text-gray-800`}>通話ルーム</p>
+                <p className={`${callMenuSubClass} text-gray-500`}>{callParticipants.length}/{CALL_MAX_PARTICIPANTS} 人</p>
               </div>
 
-              <div className="mb-3 max-h-24 overflow-y-auto rounded-lg bg-gray-50 p-2 text-xs text-gray-700">
+              <div className={`mb-3 max-h-24 overflow-y-auto rounded-lg bg-gray-50 p-2 text-gray-700 ${callMenuListClass}`}>
                 {callParticipants.length === 0 ? (
                   <p>参加者はいません</p>
                 ) : (
                   callParticipants.map((participant) => (
                     <div key={participant.session_id} className="mb-1 flex items-center justify-between rounded-lg bg-white px-2 py-1.5 last:mb-0">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm">
+                        <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 ${callMenuSubClass}`}>
                           {getCallUserIcon(participant.user_name)}
                         </span>
-                        <p className="truncate text-xs font-semibold text-gray-700">
+                        <p className={`truncate font-semibold text-gray-700 ${callMenuListClass}`}>
                           {participant.user_name}
                           {participant.session_id === callSessionIdRef.current ? ' (あなた)' : ''}
                         </p>
                       </div>
                       <div className="ml-2 flex items-center gap-1">
                         {speakingBySessionId[participant.session_id] ? (
-                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          <span className={`inline-flex items-center rounded-full bg-emerald-100 font-semibold text-emerald-700 ${callMenuBadgeClass}`}>
                             <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             話し中
                           </span>
                         ) : (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                          <span className={`inline-flex items-center rounded-full bg-gray-100 font-semibold text-gray-500 ${callMenuBadgeClass}`}>
                             待機中
                           </span>
                         )}
@@ -1227,14 +1264,14 @@ export default function ChatPage() {
                   <button
                     onClick={joinCall}
                     disabled={joiningCall}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${userTheme.buttonBg} ${userTheme.buttonHover} disabled:opacity-60`}
+                    className={`rounded-full font-semibold text-white ${userTheme.buttonBg} ${userTheme.buttonHover} disabled:opacity-60 ${callMenuButtonClass}`}
                   >
                     {joiningCall ? '参加中...' : '通話に参加'}
                   </button>
                 ) : (
                   <button
                     onClick={() => void leaveCall(true)}
-                    className="rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600"
+                    className={`rounded-full bg-red-500 font-semibold text-white hover:bg-red-600 ${callMenuButtonClass}`}
                   >
                     通話を抜ける
                   </button>
@@ -1243,7 +1280,7 @@ export default function ChatPage() {
                 <button
                   onClick={toggleMic}
                   disabled={!inCall}
-                  className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${micEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60`}
+                  className={`rounded-full font-semibold text-white ${micEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60 ${callMenuButtonClass}`}
                 >
                   {micEnabled ? 'マイクON' : 'マイクOFF'}
                 </button>
@@ -1251,7 +1288,7 @@ export default function ChatPage() {
                 <button
                   onClick={() => setSpeakerEnabled((prev) => !prev)}
                   disabled={!inCall}
-                  className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${speakerEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60`}
+                  className={`rounded-full font-semibold text-white ${speakerEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60 ${callMenuButtonClass}`}
                 >
                   {speakerEnabled ? 'スピーカーON' : 'スピーカーOFF'}
                 </button>
@@ -1259,12 +1296,12 @@ export default function ChatPage() {
 
               {inCall && (
                 <div className="mt-3 border-t border-gray-100 pt-3">
-                  <p className="mb-1.5 text-[11px] font-semibold text-gray-600">呼び出し通知</p>
+                  <p className={`mb-1.5 font-semibold text-gray-600 ${callMenuSubClass}`}>呼び出し通知</p>
                   <div className="flex items-center gap-2">
                     <select
                       value={callNotifyTarget}
                       onChange={(e) => setCallNotifyTarget(e.target.value)}
-                      className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                      className={`flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-400 ${callMenuSubClass}`}
                     >
                       <option value="">ユーザーを選択</option>
                       {KNOWN_USERS.filter((u) => u !== currentUser).map((u) => (
@@ -1274,15 +1311,15 @@ export default function ChatPage() {
                     <button
                       onClick={sendCallInvite}
                       disabled={!callNotifyTarget || sendingCallInvite}
-                      className="rounded-full bg-violet-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-600 disabled:opacity-50"
+                      className={`rounded-full bg-violet-500 font-semibold text-white hover:bg-violet-600 disabled:opacity-50 ${callMenuButtonClass}`}
                     >
                       {sendingCallInvite ? '送信中...' : '通知'}
                     </button>
                   </div>
                 </div>
               )}
-              <p className="mt-2 text-[11px] text-gray-500">入室時はマイクOFFで開始します。</p>
-              {callError && <p className="mt-1 text-xs text-red-600">{callError}</p>}
+              <p className={`mt-2 text-gray-500 ${callMenuSubClass}`}>入室時はマイクOFFで開始します。</p>
+              {callError && <p className={`mt-1 text-red-600 ${callMenuSubClass}`}>{callError}</p>}
             </div>
           )}
         </div>
