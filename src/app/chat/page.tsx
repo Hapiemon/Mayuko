@@ -1285,7 +1285,7 @@ export default function ChatPage() {
                   disabled={!inCall}
                   className={`rounded-full font-semibold text-white ${micEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60 ${callMenuButtonClass}`}
                 >
-                  {micEnabled ? 'マイクON' : 'マイクOFF'}
+                  {micEnabled ? '🗣️' : '🤐'}
                 </button>
 
                 <button
@@ -1293,7 +1293,7 @@ export default function ChatPage() {
                   disabled={!inCall}
                   className={`rounded-full font-semibold text-white ${speakerEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60 ${callMenuButtonClass}`}
                 >
-                  {speakerEnabled ? 'スピーカーON' : 'スピーカーOFF'}
+                  {speakerEnabled ? '🔊' : '🔇'}
                 </button>
               </div>
 
