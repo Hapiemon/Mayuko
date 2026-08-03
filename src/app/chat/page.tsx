@@ -1104,7 +1104,6 @@ export default function ChatPage() {
             className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white ${userTheme.buttonBg} ${userTheme.buttonHover}`}
           >
             <span className="text-base">👾</span>
-            <span>ゲーム</span>
           </button>
           <button
             onClick={() => setCallMenuOpen((prev) => !prev)}
@@ -1112,7 +1111,6 @@ export default function ChatPage() {
             className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white ${inCall ? 'bg-emerald-500 hover:bg-emerald-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`}`}
           >
             <span className="text-base">📞</span>
-            <span>通話</span>
           </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
