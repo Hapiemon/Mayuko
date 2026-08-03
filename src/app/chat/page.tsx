@@ -77,6 +77,10 @@ export default function ChatPage() {
   const [remoteAudios, setRemoteAudios] = useState<RemoteAudio[]>([]);
   const [speakingBySessionId, setSpeakingBySessionId] = useState<Record<string, boolean>>({});
   const [callError, setCallError] = useState('');
+  const [callNotifyTarget, setCallNotifyTarget] = useState<string>('');  
+  const [sendingCallInvite, setSendingCallInvite] = useState(false);
+
+  const KNOWN_USERS = ['まゆこ', 'だいや', 'あつと', 'せれな', 'るちえ'];
   const callSessionIdRef = useRef('');
   const callPollTimerRef = useRef<number | null>(null);
   const heartbeatTimerRef = useRef<number | null>(null);
@@ -791,6 +795,19 @@ export default function ChatPage() {
       setMicEnabled(false);
       setInCall(true);
       setCallMenuOpen(true);
+
+      // 通話参加通知：入室時の参加者一覧を取得してからPush送信
+      try {
+        const stateRes = await fetch(`/api/call?roomId=${CALL_ROOM_ID}&sessionId=${sessionId}&lastSignalId=0`, { cache: 'no-store' });
+        if (stateRes.ok) {
+          const stateData = (await stateRes.json()) as { participants: { user_name: string }[] };
+          const names = (stateData.participants ?? []).map((p) => p.user_name);
+          if (!names.includes(currentUser)) names.push(currentUser);
+          const body = `通話中：${names.join('、')}`;
+          notifyPush(`${currentUser}が通話ルームに入りました！`, body, currentUser);
+        }
+      } catch {}
+
       startCallLoops();
     } catch {
       stream.getTracks().forEach((track) => track.stop());
@@ -798,6 +815,23 @@ export default function ChatPage() {
     } finally {
       setJoiningCall(false);
     }
+  };
+
+  const sendCallInvite = async () => {
+    if (!callNotifyTarget || !inCall || sendingCallInvite) return;
+    setSendingCallInvite(true);
+    try {
+      const names = callParticipants.map((p) => p.user_name);
+      const body = `通話中：${names.join('、')}`;
+      const title = `${currentUser}があなたを通話ルームで待っています！`;
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, url: '/chat', targetUser: callNotifyTarget }),
+      });
+      setCallNotifyTarget('');
+    } catch {}
+    setSendingCallInvite(false);
   };
 
   const toggleMic = () => {
@@ -1229,6 +1263,30 @@ export default function ChatPage() {
                 </button>
               </div>
 
+              {inCall && (
+                <div className="mt-3 border-t border-gray-100 pt-3">
+                  <p className="mb-1.5 text-[11px] font-semibold text-gray-600">呼び出し通知</p>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={callNotifyTarget}
+                      onChange={(e) => setCallNotifyTarget(e.target.value)}
+                      className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    >
+                      <option value="">ユーザーを選択</option>
+                      {KNOWN_USERS.filter((u) => u !== currentUser).map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={sendCallInvite}
+                      disabled={!callNotifyTarget || sendingCallInvite}
+                      className="rounded-full bg-violet-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-600 disabled:opacity-50"
+                    >
+                      {sendingCallInvite ? '送信中...' : '通知'}
+                    </button>
+                  </div>
+                </div>
+              )}
               <p className="mt-2 text-[11px] text-gray-500">入室時はマイクOFFで開始します。</p>
               {callError && <p className="mt-1 text-xs text-red-600">{callError}</p>}
             </div>

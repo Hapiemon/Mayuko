@@ -14,15 +14,20 @@ webpush.setVapidDetails(
 export async function POST(req: NextRequest) {
   try {
     const sql = getSql();
-    const { title, body, url, excludeUser } = await req.json();
+    const { title, body, url, excludeUser, targetUser } = await req.json();
 
     if (!title || !body) {
       return NextResponse.json({ error: 'title and body are required' }, { status: 400 });
     }
 
-    // 送信者以外の購読を取得（送信者は自分の通知を受け取らない）
+    // targetUser: 特定ユーザーにだけ送る / excludeUser: 送信者以外に送る
     let rows;
-    if (excludeUser) {
+    if (targetUser) {
+      rows = await sql`
+        SELECT endpoint, p256dh, auth FROM push_subscriptions
+        WHERE user_name = ${targetUser}
+      `;
+    } else if (excludeUser) {
       rows = await sql`
         SELECT endpoint, p256dh, auth FROM push_subscriptions
         WHERE user_name != ${excludeUser}
