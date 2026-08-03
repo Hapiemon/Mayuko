@@ -33,6 +33,9 @@ export default function ChatPage() {
   const messageItemRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldScrollOnLoginRef = useRef(false);
+  const forceScrollRef = useRef(false);
+  const wasAtBottomRef = useRef(true);
+  const markingReadRef = useRef(false);
   const highlightTimerRef = useRef<number | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -278,6 +281,20 @@ export default function ChatPage() {
     return () => clearInterval(id);
   }, [currentUser]);
 
+  // まゆこ閲覧中に未読メッセージが届いたら随時既読化
+  useEffect(() => {
+    if (currentUser !== 'まゆこ' || markingReadRef.current) return;
+    const hasUnread = messages.some((m) => m.sender !== 'まゆこ' && m.mayuko_read_status === 'まゆこ未読');
+    if (!hasUnread) return;
+    markingReadRef.current = true;
+    markMayukoRead()
+      .then(() => fetchMessages())
+      .finally(() => {
+        markingReadRef.current = false;
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, currentUser]);
+
   const sendText = async () => {
     if (!inputText.trim()) return;
     const text = inputText.trim();
@@ -297,6 +314,7 @@ export default function ChatPage() {
       setReplyTarget(null);
       setActiveMessageId(null);
       notifyPush(currentUser, `${text}`, currentUser);
+      forceScrollRef.current = true;
       await fetchMessages();
     } catch {}
   };
@@ -318,6 +336,7 @@ export default function ChatPage() {
       setReplyTarget(null);
       setActiveMessageId(null);
       notifyPush(currentUser, `${currentUser}がファイルを送信しました`, currentUser);
+      forceScrollRef.current = true;
       await fetchMessages();
     } catch (e) {
       // ignore
@@ -383,6 +402,7 @@ export default function ChatPage() {
     const el = messagesRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    wasAtBottomRef.current = distFromBottom <= 60;
     setShowScrollBtn(distFromBottom > 60);
   };
 
@@ -404,8 +424,9 @@ export default function ChatPage() {
       checkScrollBottom();
       return;
     }
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom <= 60) {
+    // 自分が送信した直後、または更新前に最下部にいた（↓ボタン非表示）場合は最下部へスクロール
+    if (forceScrollRef.current || wasAtBottomRef.current) {
+      forceScrollRef.current = false;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
     checkScrollBottom();
