@@ -1109,7 +1109,7 @@ export default function ChatPage() {
             aria-label="ゲーム"
             className={`flex items-center gap-1.5 text-sm text-white ${userTheme.buttonBg} ${userTheme.buttonHover} px-4 py-2 rounded-full`}
           >
-            <span className="text-base">🎮</span>
+            <span className="text-base">👾</span>
           </button>
           <button
             onClick={() => setCallMenuOpen((prev) => !prev)}
