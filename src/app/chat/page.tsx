@@ -269,7 +269,6 @@ export default function ChatPage() {
         const olderPart = prev.filter((m) => m.id < oldestFromLatest);
         return [...olderPart, ...data];
       });
-      setHasMoreOlder((prev) => prev || data.length === 200);
     } catch (e) {
       // ignore
     }
@@ -301,9 +300,7 @@ export default function ChatPage() {
         return [...uniqueOlder, ...prev];
       });
 
-      if (older.length < 200) {
-        setHasMoreOlder(false);
-      }
+      setHasMoreOlder(older.length === 200);
     } catch {
       // ignore
     } finally {
