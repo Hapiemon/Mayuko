@@ -101,7 +101,7 @@ export default function ChatPage() {
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const remoteStreamsRef = useRef<Record<string, MediaStream>>({});
-  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  const speakerGainNodesRef = useRef<Record<string, GainNode>>({});
   const latestSignalIdRef = useRef(0);
   const offeredSessionsRef = useRef<Set<string>>(new Set());
   const pendingIceCandidatesRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
@@ -512,7 +512,7 @@ export default function ChatPage() {
     }, 180);
   };
 
-  const registerSpeakingStream = (sessionId: string, stream: MediaStream) => {
+  const registerSpeakingStream = (sessionId: string, stream: MediaStream, isRemote = false) => {
     if (speakingNodesRef.current[sessionId]) return;
     if (stream.getAudioTracks().length === 0) return;
 
@@ -523,6 +523,15 @@ export default function ChatPage() {
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.6;
       source.connect(analyser);
+
+      // リモートストリームはスピーカーに直接接続（autoplay制限をバイパス）
+      if (isRemote) {
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 1;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        speakerGainNodesRef.current[sessionId] = gainNode;
+      }
 
       speakingNodesRef.current[sessionId] = {
         analyser,
@@ -536,6 +545,11 @@ export default function ChatPage() {
   };
 
   const unregisterSpeakingStream = (sessionId: string) => {
+    const gainNode = speakerGainNodesRef.current[sessionId];
+    if (gainNode) {
+      try { gainNode.disconnect(); } catch {}
+      delete speakerGainNodesRef.current[sessionId];
+    }
     const bundle = speakingNodesRef.current[sessionId];
     if (bundle) {
       try {
@@ -560,6 +574,7 @@ export default function ChatPage() {
       unregisterSpeakingStream(sessionId);
     });
     speakingNodesRef.current = {};
+    speakerGainNodesRef.current = {};
     if (speakingTimerRef.current) {
       window.clearInterval(speakingTimerRef.current);
       speakingTimerRef.current = null;
@@ -731,12 +746,12 @@ export default function ChatPage() {
       const stream = event.streams[0];
       if (stream) {
         remoteStreamsRef.current[remoteSessionId] = stream;
-        registerSpeakingStream(remoteSessionId, stream);
+        registerSpeakingStream(remoteSessionId, stream, true);
       } else {
         const existing = remoteStreamsRef.current[remoteSessionId] ?? new MediaStream();
         existing.addTrack(event.track);
         remoteStreamsRef.current[remoteSessionId] = existing;
-        registerSpeakingStream(remoteSessionId, existing);
+        registerSpeakingStream(remoteSessionId, existing, true);
       }
       refreshRemoteAudios();
     };
@@ -1257,17 +1272,13 @@ export default function ChatPage() {
     }
   }, [inputText]);
 
+  // スピーカーON/OFFを GainNode で制御（AudioContext経由再生のため audioエレメント不要）
   useEffect(() => {
-    remoteAudios.forEach(({ sessionId, stream }) => {
-      const audioEl = audioRefs.current[sessionId];
-      if (!audioEl) return;
-      if (audioEl.srcObject !== stream) {
-        audioEl.srcObject = stream;
-      }
-      audioEl.muted = !speakerEnabled;
-      void audioEl.play().catch(() => {});
+    const gain = speakerEnabled ? 1 : 0;
+    Object.values(speakerGainNodesRef.current).forEach((gainNode) => {
+      gainNode.gain.value = gain;
     });
-  }, [remoteAudios, speakerEnabled]);
+  }, [speakerEnabled]);
 
   useEffect(() => {
     return () => {
@@ -1502,18 +1513,6 @@ export default function ChatPage() {
           )}
         </div>
       </header>
-
-      {remoteAudios.map((audio) => (
-        <audio
-          key={audio.sessionId}
-          ref={(el) => {
-            audioRefs.current[audio.sessionId] = el;
-          }}
-          autoPlay
-          playsInline
-          className="hidden"
-        />
-      ))}
 
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {showLoadOlderBtn && (
