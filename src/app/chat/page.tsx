@@ -1116,7 +1116,7 @@ export default function ChatPage() {
             aria-label="通話"
             className={`flex items-center gap-1.5 text-sm text-white ${inCall ? 'bg-emerald-500 hover:bg-emerald-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`} px-4 py-2 rounded-full`}
           >
-            <span className="text-base">☎️</span>
+            <span className="text-base">📞</span>
           </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
