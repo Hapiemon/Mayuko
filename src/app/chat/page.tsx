@@ -37,6 +37,12 @@ interface RemoteAudio {
   stream: MediaStream;
 }
 
+interface IceServerConfig {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
 type MessageFontSize = 'small' | 'medium' | 'large';
 
 export default function ChatPage() {
@@ -91,6 +97,7 @@ export default function ChatPage() {
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   const latestSignalIdRef = useRef(0);
   const offeredSessionsRef = useRef<Set<string>>(new Set());
+  const pendingIceCandidatesRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const speakingAudioContextRef = useRef<AudioContext | null>(null);
   const speakingNodesRef = useRef<
     Record<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode; data: Uint8Array<ArrayBuffer> }>
@@ -107,6 +114,34 @@ export default function ChatPage() {
 
   const getCallUserIcon = (userName: string) => {
     return CALL_USER_ICONS[userName] ?? '🙂';
+  };
+
+  const getIceServers = (): IceServerConfig[] => {
+    const stunUrls = (process.env.NEXT_PUBLIC_STUN_URLS ?? 'stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302')
+      .split(',')
+      .map((url) => url.trim())
+      .filter(Boolean);
+
+    const turnUrls = (process.env.NEXT_PUBLIC_TURN_URLS ?? '')
+      .split(',')
+      .map((url) => url.trim())
+      .filter(Boolean);
+
+    const iceServers: IceServerConfig[] = [];
+
+    if (stunUrls.length > 0) {
+      iceServers.push({ urls: stunUrls });
+    }
+
+    if (turnUrls.length > 0 && process.env.NEXT_PUBLIC_TURN_USERNAME && process.env.NEXT_PUBLIC_TURN_CREDENTIAL) {
+      iceServers.push({
+        urls: turnUrls,
+        username: process.env.NEXT_PUBLIC_TURN_USERNAME,
+        credential: process.env.NEXT_PUBLIC_TURN_CREDENTIAL,
+      });
+    }
+
+    return iceServers;
   };
 
   const TABS: { key: 'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'; label: string }[] = [
@@ -551,9 +586,25 @@ export default function ChatPage() {
       delete peersRef.current[remoteSessionId];
     }
     delete remoteStreamsRef.current[remoteSessionId];
+    delete pendingIceCandidatesRef.current[remoteSessionId];
     unregisterSpeakingStream(remoteSessionId);
     offeredSessionsRef.current.delete(remoteSessionId);
     refreshRemoteAudios();
+  };
+
+  const flushPendingIceCandidates = async (remoteSessionId: string, peer: RTCPeerConnection) => {
+    const pending = pendingIceCandidatesRef.current[remoteSessionId] ?? [];
+    if (pending.length === 0 || !peer.remoteDescription) return;
+
+    delete pendingIceCandidatesRef.current[remoteSessionId];
+
+    for (const candidate of pending) {
+      try {
+        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.error('pending ice apply error:', e);
+      }
+    }
   };
 
   const sendSignal = async (toSessionId: string, signalType: 'offer' | 'answer' | 'ice', payload: unknown) => {
@@ -580,7 +631,8 @@ export default function ChatPage() {
     }
 
     const peer = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: getIceServers(),
+      iceCandidatePoolSize: 4,
     });
 
     const localStream = localStreamRef.current;
@@ -611,7 +663,7 @@ export default function ChatPage() {
     };
 
     peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'failed' || peer.connectionState === 'closed' || peer.connectionState === 'disconnected') {
+      if (peer.connectionState === 'failed' || peer.connectionState === 'closed') {
         closePeer(remoteSessionId);
       }
     };
@@ -647,6 +699,7 @@ export default function ChatPage() {
     try {
       if (signal.signal_type === 'offer') {
         await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
+        await flushPendingIceCandidates(signal.from_session_id, peer);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         await sendSignal(signal.from_session_id, 'answer', answer);
@@ -655,11 +708,19 @@ export default function ChatPage() {
 
       if (signal.signal_type === 'answer') {
         await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
+        await flushPendingIceCandidates(signal.from_session_id, peer);
         return;
       }
 
       if (signal.signal_type === 'ice') {
         if (signal.payload) {
+          if (!peer.remoteDescription) {
+            pendingIceCandidatesRef.current[signal.from_session_id] = [
+              ...(pendingIceCandidatesRef.current[signal.from_session_id] ?? []),
+              signal.payload as RTCIceCandidateInit,
+            ];
+            return;
+          }
           await peer.addIceCandidate(new RTCIceCandidate(signal.payload as RTCIceCandidateInit));
         }
       }
