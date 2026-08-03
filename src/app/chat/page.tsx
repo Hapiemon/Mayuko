@@ -1076,16 +1076,18 @@ export default function ChatPage() {
           <p className={`${userTheme.headerSubText} text-xs`}>MINE</p>
         </div>
         <div className="relative flex items-center gap-2">
-          <select
-            value={messageFontSize}
-            onChange={(e) => setMessageFontSize(e.target.value as MessageFontSize)}
-            aria-label="文字サイズ"
-            className="h-9 rounded-full bg-white/20 px-2 text-xs font-semibold text-white focus:outline-none"
-          >
-            <option value="small">小</option>
-            <option value="medium">中</option>
-            <option value="large">大</option>
-          </select>
+          <div className={`flex h-9 items-center rounded-full px-4 ${userTheme.buttonBg} ${userTheme.buttonHover}`}>
+            <select
+              value={messageFontSize}
+              onChange={(e) => setMessageFontSize(e.target.value as MessageFontSize)}
+              aria-label="文字サイズ"
+              className="cursor-pointer bg-transparent text-sm font-semibold text-white focus:outline-none"
+            >
+              <option value="small" className="text-black">小</option>
+              <option value="medium" className="text-black">中</option>
+              <option value="large" className="text-black">大</option>
+            </select>
+          </div>
           {pushPermission !== 'granted' && pushPermission !== 'denied' && (
             <button
               onClick={() => requestNotificationPermission(currentUser)}
@@ -1099,16 +1101,18 @@ export default function ChatPage() {
           <button
             onClick={() => setGameMenuOpen((prev) => !prev)}
             aria-label="ゲーム"
-            className={`flex items-center gap-1.5 text-sm text-white ${userTheme.buttonBg} ${userTheme.buttonHover} px-4 py-2 rounded-full`}
+            className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white ${userTheme.buttonBg} ${userTheme.buttonHover}`}
           >
             <span className="text-base">👾</span>
+            <span>ゲーム</span>
           </button>
           <button
             onClick={() => setCallMenuOpen((prev) => !prev)}
             aria-label="通話"
-            className={`flex items-center gap-1.5 text-sm text-white ${inCall ? 'bg-emerald-500 hover:bg-emerald-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`} px-4 py-2 rounded-full`}
+            className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white ${inCall ? 'bg-emerald-500 hover:bg-emerald-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`}`}
           >
             <span className="text-base">📞</span>
+            <span>通話</span>
           </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
