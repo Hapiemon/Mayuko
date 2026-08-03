@@ -59,6 +59,20 @@ Vercel Dashboard → **Settings** → **Environment Variables** に以下を追�
 |-----|-------|
 | `DATABASE_URL` | Neon の接続文字列 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob のトークン（自動追加済みの場合はスキップ） |
+| `NEXT_PUBLIC_STUN_URLS` | `stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302` |
+| `NEXT_PUBLIC_TURN_URLS` | `turn:standard.relay.metered.ca:80,turn:standard.relay.metered.ca:80?transport=tcp,turn:standard.relay.metered.ca:443,turns:standard.relay.metered.ca:443?transport=tcp` |
+| `NEXT_PUBLIC_TURN_USERNAME` | Metered の Username |
+| `NEXT_PUBLIC_TURN_CREDENTIAL` | Metered の Password |
+
+### 4-1. 通話が Wi-Fi × 5G で失敗する場合
+
+この症状は、P2P 直結ができず TURN 経由の中継が必要なケースがほとんどです。`NEXT_PUBLIC_TURN_URLS` を設定し、`turns:...:443` を必ず含めてください。`candidate type: relay` が出れば TURN が使えています。
+
+注意:
+
+- Metered の API Key をブラウザ側に置かないでください。
+- TURN の接続先と資格情報だけを環境変数で渡してください。
+- `NEXT_PUBLIC_...` はブラウザに公開されます。ここには TURN の接続情報だけを置き、管理用 API Key は入れないでください。
 
 ### 5. デプロイ
 
