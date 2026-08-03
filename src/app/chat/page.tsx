@@ -1713,7 +1713,6 @@ export default function ChatPage() {
             rows={1}
             className={`w-full resize-none rounded-2xl border border-gray-300 px-4 py-2 ${fontSizeClass} focus:outline-none focus:ring-1 focus:ring-violet-600`}
             style={{ maxHeight: '440px', overflow: 'auto', height: '40px' }}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
           />
         </div>
 
