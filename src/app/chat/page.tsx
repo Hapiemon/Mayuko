@@ -779,6 +779,21 @@ export default function ChatPage() {
     }
   };
 
+  const fetchCallParticipantsOverview = async () => {
+    try {
+      const res = await fetch(`/api/call?roomId=${CALL_ROOM_ID}`, { cache: 'no-store' });
+      if (!res.ok) return;
+
+      const data = (await res.json()) as {
+        participants: CallParticipant[];
+      };
+
+      setCallParticipants(data.participants ?? []);
+    } catch (e) {
+      console.error('fetch call participants overview error:', e);
+    }
+  };
+
   const leaveCall = async (notifyServer = true) => {
     stopCallLoops();
     inCallRef.current = false;
@@ -964,6 +979,18 @@ export default function ChatPage() {
     const id = setInterval(fetchMessages, 3000);
     return () => clearInterval(id);
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!callMenuOpen || inCall) return;
+
+    void fetchCallParticipantsOverview();
+
+    const id = window.setInterval(() => {
+      void fetchCallParticipantsOverview();
+    }, 2000);
+
+    return () => window.clearInterval(id);
+  }, [callMenuOpen, inCall]);
 
   // まゆこ閲覧中に未読メッセージが届いたら随時既読化
   useEffect(() => {
