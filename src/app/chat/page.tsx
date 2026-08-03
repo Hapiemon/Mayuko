@@ -1076,24 +1076,16 @@ export default function ChatPage() {
           <p className={`${userTheme.headerSubText} text-xs`}>MINE</p>
         </div>
         <div className="relative flex items-center gap-2">
-          <div className={`flex items-center gap-1 ${userTheme.buttonDarkerBg} rounded-full p-1`}>
-            <span className="px-1 text-[10px] text-violet-200">文字</span>
-            {([
-              { value: 'small', label: '小' },
-              { value: 'medium', label: '中' },
-              { value: 'large', label: '大' },
-            ] as const).map((size) => (
-              <button
-                key={size.value}
-                onClick={() => setMessageFontSize(size.value)}
-                aria-label={`文字サイズ${size.label}`}
-                aria-pressed={messageFontSize === size.value}
-                className={`h-8 min-w-8 px-2 rounded-full text-xs font-semibold transition-colors ${messageFontSize === size.value ? 'bg-white' : 'text-white'}`}
-              >
-                {size.label}
-              </button>
-            ))}
-          </div>
+          <select
+            value={messageFontSize}
+            onChange={(e) => setMessageFontSize(e.target.value as MessageFontSize)}
+            aria-label="文字サイズ"
+            className="h-9 rounded-full bg-white/20 px-2 text-xs font-semibold text-white focus:outline-none"
+          >
+            <option value="small">小</option>
+            <option value="medium">中</option>
+            <option value="large">大</option>
+          </select>
           {pushPermission !== 'granted' && pushPermission !== 'denied' && (
             <button
               onClick={() => requestNotificationPermission(currentUser)}
