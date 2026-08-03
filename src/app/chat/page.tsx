@@ -252,7 +252,7 @@ export default function ChatPage() {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch('/api/messages');
+      const res = await fetch('/api/messages', { cache: 'no-store' });
       if (!res.ok) return;
       const data = (await res.json()) as Message[];
       setMessages(data);
@@ -299,7 +299,7 @@ export default function ChatPage() {
     if (!inputText.trim()) return;
     const text = inputText.trim();
     try {
-      await fetch('/api/messages', {
+      const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -310,6 +310,9 @@ export default function ChatPage() {
           replyToContent: replyTarget?.content ?? null,
         }),
       });
+      if (!res.ok) {
+        return;
+      }
       setInputText('');
       setReplyTarget(null);
       setActiveMessageId(null);
@@ -332,7 +335,10 @@ export default function ChatPage() {
         fd.append('replyToSender', replyTarget.sender);
         fd.append('replyToContent', replyTarget.content);
       }
-      await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) {
+        return;
+      }
       setReplyTarget(null);
       setActiveMessageId(null);
       notifyPush(currentUser, `${currentUser}がファイルを送信しました`, currentUser);

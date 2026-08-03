@@ -29,18 +29,26 @@ export async function GET() {
     await ensureSchema();
     const sql = getSql();
     const rows = await sql`
-      SELECT id, sender, content, media_url, media_type, created_at,
-        reply_to_id, reply_to_sender, reply_to_content,
-        CASE
-          WHEN sender = 'まゆこ' THEN 'まゆこ既読'
-          WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
-          ELSE 'まゆこ既読'
-        END AS mayuko_read_status
-      FROM messages
-      ORDER BY created_at ASC
-      LIMIT 200
+      SELECT *
+      FROM (
+        SELECT id, sender, content, media_url, media_type, created_at,
+          reply_to_id, reply_to_sender, reply_to_content,
+          CASE
+            WHEN sender = 'まゆこ' THEN 'まゆこ既読'
+            WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
+            ELSE 'まゆこ既読'
+          END AS mayuko_read_status
+        FROM messages
+        ORDER BY created_at DESC, id DESC
+        LIMIT 200
+      ) AS latest
+      ORDER BY created_at ASC, id ASC
     `;
-    return NextResponse.json(rows);
+    return NextResponse.json(rows, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      },
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
