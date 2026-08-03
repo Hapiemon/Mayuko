@@ -428,6 +428,10 @@ export default function ChatPage() {
     if (forceScrollRef.current || wasAtBottomRef.current) {
       forceScrollRef.current = false;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      // スムーズスクロール完了前に判定すると誤って「最下部でない」と記録されるため、意図した状態を明示的にセット
+      wasAtBottomRef.current = true;
+      setShowScrollBtn(false);
+      return;
     }
     checkScrollBottom();
   // eslint-disable-next-line react-hooks/exhaustive-deps
