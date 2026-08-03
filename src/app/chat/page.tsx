@@ -17,9 +17,31 @@ interface Message {
   mayuko_read_status?: 'まゆこ未読' | 'まゆこ既読';
 }
 
+interface CallParticipant {
+  session_id: string;
+  user_name: string;
+  joined_at: string;
+  last_seen: string;
+}
+
+interface CallSignal {
+  id: number;
+  from_session_id: string;
+  to_session_id: string | null;
+  signal_type: 'offer' | 'answer' | 'ice';
+  payload: unknown;
+}
+
+interface RemoteAudio {
+  sessionId: string;
+  stream: MediaStream;
+}
+
 type MessageFontSize = 'small' | 'medium' | 'large';
 
 export default function ChatPage() {
+  const CALL_ROOM_ID = 'main';
+  const CALL_MAX_PARTICIPANTS = 5;
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,6 +68,41 @@ export default function ChatPage() {
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'>('greeting');
   const [gameMenuOpen, setGameMenuOpen] = useState(false);
+  const [callMenuOpen, setCallMenuOpen] = useState(false);
+  const [inCall, setInCall] = useState(false);
+  const [joiningCall, setJoiningCall] = useState(false);
+  const [micEnabled, setMicEnabled] = useState(false);
+  const [speakerEnabled, setSpeakerEnabled] = useState(true);
+  const [callParticipants, setCallParticipants] = useState<CallParticipant[]>([]);
+  const [remoteAudios, setRemoteAudios] = useState<RemoteAudio[]>([]);
+  const [speakingBySessionId, setSpeakingBySessionId] = useState<Record<string, boolean>>({});
+  const [callError, setCallError] = useState('');
+  const callSessionIdRef = useRef('');
+  const callPollTimerRef = useRef<number | null>(null);
+  const heartbeatTimerRef = useRef<number | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const peersRef = useRef<Record<string, RTCPeerConnection>>({});
+  const remoteStreamsRef = useRef<Record<string, MediaStream>>({});
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  const latestSignalIdRef = useRef(0);
+  const offeredSessionsRef = useRef<Set<string>>(new Set());
+  const speakingAudioContextRef = useRef<AudioContext | null>(null);
+  const speakingNodesRef = useRef<
+    Record<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode; data: Uint8Array<ArrayBuffer> }>
+  >({});
+  const speakingTimerRef = useRef<number | null>(null);
+
+  const CALL_USER_ICONS: Record<string, string> = {
+    まゆこ: '👩',
+    だいや: '👦',
+    あつと: '👨',
+    せれな: '👧',
+    るちえ: '👩',
+  };
+
+  const getCallUserIcon = (userName: string) => {
+    return CALL_USER_ICONS[userName] ?? '🙂';
+  };
 
   const TABS: { key: 'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'; label: string }[] = [
     { key: 'greeting', label: '挨拶' },
@@ -314,6 +371,445 @@ export default function ChatPage() {
     }
   };
 
+  const refreshRemoteAudios = () => {
+    const entries = Object.entries(remoteStreamsRef.current).map(([sessionId, stream]) => ({ sessionId, stream }));
+    setRemoteAudios(entries);
+  };
+
+  const ensureSpeakingAudioContext = () => {
+    if (!speakingAudioContextRef.current) {
+      speakingAudioContextRef.current = new AudioContext();
+    }
+    if (speakingAudioContextRef.current.state === 'suspended') {
+      void speakingAudioContextRef.current.resume().catch(() => {});
+    }
+    return speakingAudioContextRef.current;
+  };
+
+  const stopSpeakingLoopIfIdle = () => {
+    if (Object.keys(speakingNodesRef.current).length > 0) return;
+    if (speakingTimerRef.current) {
+      window.clearInterval(speakingTimerRef.current);
+      speakingTimerRef.current = null;
+    }
+  };
+
+  const startSpeakingLoop = () => {
+    if (speakingTimerRef.current) return;
+    speakingTimerRef.current = window.setInterval(() => {
+      setSpeakingBySessionId((prev) => {
+        const next: Record<string, boolean> = { ...prev };
+        let changed = false;
+
+        Object.entries(speakingNodesRef.current).forEach(([sessionId, bundle]) => {
+          bundle.analyser.getByteTimeDomainData(bundle.data);
+          let sum = 0;
+          for (let i = 0; i < bundle.data.length; i += 1) {
+            sum += Math.abs((bundle.data[i] - 128) / 128);
+          }
+          const average = sum / bundle.data.length;
+          const isSpeaking = average > 0.03;
+          if ((next[sessionId] ?? false) !== isSpeaking) {
+            next[sessionId] = isSpeaking;
+            changed = true;
+          }
+        });
+
+        Object.keys(next).forEach((sessionId) => {
+          if (!speakingNodesRef.current[sessionId]) {
+            delete next[sessionId];
+            changed = true;
+          }
+        });
+
+        return changed ? next : prev;
+      });
+    }, 180);
+  };
+
+  const registerSpeakingStream = (sessionId: string, stream: MediaStream) => {
+    if (speakingNodesRef.current[sessionId]) return;
+    if (stream.getAudioTracks().length === 0) return;
+
+    try {
+      const ctx = ensureSpeakingAudioContext();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.6;
+      source.connect(analyser);
+
+      speakingNodesRef.current[sessionId] = {
+        analyser,
+        source,
+        data: new Uint8Array(new ArrayBuffer(analyser.fftSize)),
+      };
+      startSpeakingLoop();
+    } catch (e) {
+      console.error('register speaking stream error:', e);
+    }
+  };
+
+  const unregisterSpeakingStream = (sessionId: string) => {
+    const bundle = speakingNodesRef.current[sessionId];
+    if (bundle) {
+      try {
+        bundle.source.disconnect();
+      } catch {}
+      try {
+        bundle.analyser.disconnect();
+      } catch {}
+      delete speakingNodesRef.current[sessionId];
+    }
+    setSpeakingBySessionId((prev) => {
+      if (!(sessionId in prev)) return prev;
+      const next = { ...prev };
+      delete next[sessionId];
+      return next;
+    });
+    stopSpeakingLoopIfIdle();
+  };
+
+  const clearSpeakingResources = () => {
+    Object.keys(speakingNodesRef.current).forEach((sessionId) => {
+      unregisterSpeakingStream(sessionId);
+    });
+    speakingNodesRef.current = {};
+    if (speakingTimerRef.current) {
+      window.clearInterval(speakingTimerRef.current);
+      speakingTimerRef.current = null;
+    }
+    if (speakingAudioContextRef.current) {
+      void speakingAudioContextRef.current.close().catch(() => {});
+      speakingAudioContextRef.current = null;
+    }
+    setSpeakingBySessionId({});
+  };
+
+  const stopCallLoops = () => {
+    if (callPollTimerRef.current) {
+      window.clearInterval(callPollTimerRef.current);
+      callPollTimerRef.current = null;
+    }
+    if (heartbeatTimerRef.current) {
+      window.clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  };
+
+  const closePeer = (remoteSessionId: string) => {
+    const peer = peersRef.current[remoteSessionId];
+    if (peer) {
+      try {
+        peer.onicecandidate = null;
+        peer.ontrack = null;
+        peer.onconnectionstatechange = null;
+        peer.close();
+      } catch {}
+      delete peersRef.current[remoteSessionId];
+    }
+    delete remoteStreamsRef.current[remoteSessionId];
+    unregisterSpeakingStream(remoteSessionId);
+    offeredSessionsRef.current.delete(remoteSessionId);
+    refreshRemoteAudios();
+  };
+
+  const sendSignal = async (toSessionId: string, signalType: 'offer' | 'answer' | 'ice', payload: unknown) => {
+    if (!callSessionIdRef.current) return;
+    try {
+      await fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'signal',
+          roomId: CALL_ROOM_ID,
+          fromSessionId: callSessionIdRef.current,
+          toSessionId,
+          signalType,
+          payload,
+        }),
+      });
+    } catch {}
+  };
+
+  const ensurePeer = (remoteSessionId: string) => {
+    if (peersRef.current[remoteSessionId]) {
+      return peersRef.current[remoteSessionId];
+    }
+
+    const peer = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    });
+
+    const localStream = localStreamRef.current;
+    if (localStream) {
+      localStream.getTracks().forEach((track) => {
+        peer.addTrack(track, localStream);
+      });
+    }
+
+    peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        void sendSignal(remoteSessionId, 'ice', event.candidate.toJSON());
+      }
+    };
+
+    peer.ontrack = (event) => {
+      const stream = event.streams[0];
+      if (stream) {
+        remoteStreamsRef.current[remoteSessionId] = stream;
+        registerSpeakingStream(remoteSessionId, stream);
+      } else {
+        const existing = remoteStreamsRef.current[remoteSessionId] ?? new MediaStream();
+        existing.addTrack(event.track);
+        remoteStreamsRef.current[remoteSessionId] = existing;
+        registerSpeakingStream(remoteSessionId, existing);
+      }
+      refreshRemoteAudios();
+    };
+
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'failed' || peer.connectionState === 'closed' || peer.connectionState === 'disconnected') {
+        closePeer(remoteSessionId);
+      }
+    };
+
+    peersRef.current[remoteSessionId] = peer;
+    return peer;
+  };
+
+  const makeOfferIfNeeded = async (remoteSessionId: string) => {
+    if (!callSessionIdRef.current) return;
+    if (callSessionIdRef.current <= remoteSessionId) return;
+    if (offeredSessionsRef.current.has(remoteSessionId)) return;
+
+    const peer = ensurePeer(remoteSessionId);
+    if (peer.signalingState !== 'stable') return;
+
+    try {
+      offeredSessionsRef.current.add(remoteSessionId);
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      await sendSignal(remoteSessionId, 'offer', offer);
+    } catch {
+      offeredSessionsRef.current.delete(remoteSessionId);
+    }
+  };
+
+  const applySignal = async (signal: CallSignal) => {
+    if (!callSessionIdRef.current) return;
+    if (signal.from_session_id === callSessionIdRef.current) return;
+
+    const peer = ensurePeer(signal.from_session_id);
+
+    try {
+      if (signal.signal_type === 'offer') {
+        await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        await sendSignal(signal.from_session_id, 'answer', answer);
+        return;
+      }
+
+      if (signal.signal_type === 'answer') {
+        await peer.setRemoteDescription(new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit));
+        return;
+      }
+
+      if (signal.signal_type === 'ice') {
+        if (signal.payload) {
+          await peer.addIceCandidate(new RTCIceCandidate(signal.payload as RTCIceCandidateInit));
+        }
+      }
+    } catch (e) {
+      console.error('signal apply error:', e);
+    }
+  };
+
+  const syncCallState = async () => {
+    if (!inCall || !callSessionIdRef.current) return;
+
+    try {
+      const res = await fetch(
+        `/api/call?roomId=${CALL_ROOM_ID}&sessionId=${callSessionIdRef.current}&lastSignalId=${latestSignalIdRef.current}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) return;
+
+      const data = (await res.json()) as {
+        participants: CallParticipant[];
+        signals: CallSignal[];
+        latestSignalId: number;
+      };
+
+      setCallParticipants(data.participants ?? []);
+
+      const mySessionId = callSessionIdRef.current;
+      const activeRemoteSessionIds = new Set(
+        (data.participants ?? [])
+          .map((p) => p.session_id)
+          .filter((sessionId) => sessionId !== mySessionId)
+      );
+
+      Object.keys(peersRef.current).forEach((sessionId) => {
+        if (!activeRemoteSessionIds.has(sessionId)) {
+          closePeer(sessionId);
+        }
+      });
+
+      for (const remoteSessionId of activeRemoteSessionIds) {
+        ensurePeer(remoteSessionId);
+        await makeOfferIfNeeded(remoteSessionId);
+      }
+
+      for (const signal of data.signals ?? []) {
+        await applySignal(signal);
+      }
+
+      latestSignalIdRef.current = Math.max(
+        latestSignalIdRef.current,
+        data.latestSignalId ?? 0,
+        ...(data.signals ?? []).map((s) => s.id)
+      );
+    } catch (e) {
+      console.error('sync call state error:', e);
+    }
+  };
+
+  const leaveCall = async (notifyServer = true) => {
+    stopCallLoops();
+
+    if (notifyServer && callSessionIdRef.current) {
+      try {
+        await fetch('/api/call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'leave',
+            roomId: CALL_ROOM_ID,
+            sessionId: callSessionIdRef.current,
+          }),
+        });
+      } catch {}
+    }
+
+    Object.keys(peersRef.current).forEach((sessionId) => {
+      closePeer(sessionId);
+    });
+    peersRef.current = {};
+    remoteStreamsRef.current = {};
+    setRemoteAudios([]);
+    clearSpeakingResources();
+    offeredSessionsRef.current.clear();
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+
+    callSessionIdRef.current = '';
+    latestSignalIdRef.current = 0;
+    setMicEnabled(false);
+    setInCall(false);
+    setCallParticipants([]);
+  };
+
+  const startCallLoops = () => {
+    stopCallLoops();
+
+    void syncCallState();
+
+    callPollTimerRef.current = window.setInterval(() => {
+      void syncCallState();
+    }, 1200);
+
+    heartbeatTimerRef.current = window.setInterval(() => {
+      if (!callSessionIdRef.current) return;
+      fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'heartbeat',
+          roomId: CALL_ROOM_ID,
+          sessionId: callSessionIdRef.current,
+        }),
+      }).catch(() => {});
+    }, 10000);
+  };
+
+  const joinCall = async () => {
+    if (!currentUser || inCall || joiningCall) return;
+
+    setJoiningCall(true);
+    setCallError('');
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch {
+      setCallError('マイクが使用できません。ブラウザの許可設定を確認してください。');
+      setJoiningCall(false);
+      return;
+    }
+
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = false;
+    });
+
+    const sessionId = crypto.randomUUID();
+    try {
+      const res = await fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'join',
+          roomId: CALL_ROOM_ID,
+          userName: currentUser,
+          sessionId,
+        }),
+      });
+
+      if (res.status === 409) {
+        setCallError('通話ルームが満員です（最大5人）。');
+        stream.getTracks().forEach((track) => track.stop());
+        setJoiningCall(false);
+        return;
+      }
+
+      if (!res.ok) {
+        setCallError('通話ルームへ参加できませんでした。');
+        stream.getTracks().forEach((track) => track.stop());
+        setJoiningCall(false);
+        return;
+      }
+
+      callSessionIdRef.current = sessionId;
+      localStreamRef.current = stream;
+      registerSpeakingStream(sessionId, stream);
+      latestSignalIdRef.current = 0;
+      offeredSessionsRef.current.clear();
+      setMicEnabled(false);
+      setInCall(true);
+      setCallMenuOpen(true);
+      startCallLoops();
+    } catch {
+      stream.getTracks().forEach((track) => track.stop());
+      setCallError('通話ルームへ参加できませんでした。');
+    } finally {
+      setJoiningCall(false);
+    }
+  };
+
+  const toggleMic = () => {
+    setMicEnabled((prev) => {
+      const next = !prev;
+      localStreamRef.current?.getAudioTracks().forEach((track) => {
+        track.enabled = next;
+      });
+      return next;
+    });
+  };
+
   const markMayukoRead = async () => {
     try {
       await fetch('/api/messages', {
@@ -513,11 +1009,25 @@ export default function ChatPage() {
   }, [inputText]);
 
   useEffect(() => {
+    remoteAudios.forEach(({ sessionId, stream }) => {
+      const audioEl = audioRefs.current[sessionId];
+      if (!audioEl) return;
+      if (audioEl.srcObject !== stream) {
+        audioEl.srcObject = stream;
+      }
+      audioEl.muted = !speakerEnabled;
+      void audioEl.play().catch(() => {});
+    });
+  }, [remoteAudios, speakerEnabled]);
+
+  useEffect(() => {
     return () => {
       if (highlightTimerRef.current) {
         window.clearTimeout(highlightTimerRef.current);
       }
+      void leaveCall(true);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!currentUser) {
@@ -567,11 +1077,19 @@ export default function ChatPage() {
           >
             <span className="text-base">🎮</span>
           </button>
+          <button
+            onClick={() => setCallMenuOpen((prev) => !prev)}
+            aria-label="通話"
+            className={`flex items-center gap-1.5 text-sm text-white ${inCall ? 'bg-emerald-500 hover:bg-emerald-600' : `${userTheme.buttonBg} ${userTheme.buttonHover}`} px-4 py-2 rounded-full`}
+          >
+            <span className="text-base">☎️</span>
+          </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
           )}
           <button
             onClick={() => {
+              void leaveCall(true);
               sessionStorage.removeItem('chatUser');
               router.push('/');
             }}
@@ -636,8 +1154,99 @@ export default function ChatPage() {
               </button>
             </div>
           )}
+
+          {callMenuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl bg-white p-3 text-gray-800 shadow-2xl ring-1 ring-black/10">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-800">通話ルーム</p>
+                <p className="text-xs text-gray-500">{callParticipants.length}/{CALL_MAX_PARTICIPANTS} 人</p>
+              </div>
+
+              <div className="mb-3 max-h-24 overflow-y-auto rounded-lg bg-gray-50 p-2 text-xs text-gray-700">
+                {callParticipants.length === 0 ? (
+                  <p>参加者はいません</p>
+                ) : (
+                  callParticipants.map((participant) => (
+                    <div key={participant.session_id} className="mb-1 flex items-center justify-between rounded-lg bg-white px-2 py-1.5 last:mb-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm">
+                          {getCallUserIcon(participant.user_name)}
+                        </span>
+                        <p className="truncate text-xs font-semibold text-gray-700">
+                          {participant.user_name}
+                          {participant.session_id === callSessionIdRef.current ? ' (あなた)' : ''}
+                        </p>
+                      </div>
+                      <div className="ml-2 flex items-center gap-1">
+                        {speakingBySessionId[participant.session_id] ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            話し中
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                            待機中
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {!inCall ? (
+                  <button
+                    onClick={joinCall}
+                    disabled={joiningCall}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${userTheme.buttonBg} ${userTheme.buttonHover} disabled:opacity-60`}
+                  >
+                    {joiningCall ? '参加中...' : '通話に参加'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => void leaveCall(true)}
+                    className="rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600"
+                  >
+                    通話を抜ける
+                  </button>
+                )}
+
+                <button
+                  onClick={toggleMic}
+                  disabled={!inCall}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${micEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60`}
+                >
+                  {micEnabled ? 'マイクON' : 'マイクOFF'}
+                </button>
+
+                <button
+                  onClick={() => setSpeakerEnabled((prev) => !prev)}
+                  disabled={!inCall}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold text-white ${speakerEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} disabled:opacity-60`}
+                >
+                  {speakerEnabled ? 'スピーカーON' : 'スピーカーOFF'}
+                </button>
+              </div>
+
+              <p className="mt-2 text-[11px] text-gray-500">入室時はマイクOFFで開始します。</p>
+              {callError && <p className="mt-1 text-xs text-red-600">{callError}</p>}
+            </div>
+          )}
         </div>
       </header>
+
+      {remoteAudios.map((audio) => (
+        <audio
+          key={audio.sessionId}
+          ref={(el) => {
+            audioRefs.current[audio.sessionId] = el;
+          }}
+          autoPlay
+          playsInline
+          className="hidden"
+        />
+      ))}
 
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
         {showLoadOlderBtn && (
