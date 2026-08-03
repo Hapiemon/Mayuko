@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { createClient } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+
+const supabaseCall = createClient(
+  process.env.NEXT_PUBLIC_MAYUKO_CALL_MAYUKOSUPABASE_URL!,
+  process.env.NEXT_PUBLIC_MAYUKO_CALL_MAYUKOSUPABASE_ANON_KEY!
+);
 
 interface Message {
   id: number;
@@ -98,6 +105,7 @@ export default function ChatPage() {
   const latestSignalIdRef = useRef(0);
   const offeredSessionsRef = useRef<Set<string>>(new Set());
   const pendingIceCandidatesRef = useRef<Record<string, RTCIceCandidateInit[]>>({});
+  const callChannelRef = useRef<RealtimeChannel | null>(null);
   const speakingAudioContextRef = useRef<AudioContext | null>(null);
   const speakingNodesRef = useRef<
     Record<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode; data: Uint8Array<ArrayBuffer> }>
@@ -608,21 +616,92 @@ export default function ChatPage() {
   };
 
   const sendSignal = async (toSessionId: string, signalType: 'offer' | 'answer' | 'ice', payload: unknown) => {
-    if (!callSessionIdRef.current) return;
+    if (!callSessionIdRef.current || !callChannelRef.current) return;
     try {
-      await fetch('/api/call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'signal',
-          roomId: CALL_ROOM_ID,
+      await callChannelRef.current.send({
+        type: 'broadcast',
+        event: 'signal',
+        payload: {
           fromSessionId: callSessionIdRef.current,
           toSessionId,
           signalType,
           payload,
-        }),
+        },
       });
     } catch {}
+  };
+
+  const setupCallChannel = (sessionId: string, userName: string) => {
+    // 既存チャンネルがあれば削除
+    if (callChannelRef.current) {
+      supabaseCall.removeChannel(callChannelRef.current).catch(() => {});
+      callChannelRef.current = null;
+    }
+
+    const channel = supabaseCall.channel(`call:${CALL_ROOM_ID}`, {
+      config: { broadcast: { self: false }, presence: { key: sessionId } },
+    });
+
+    // 参加者リストを Presence から同期
+    const syncParticipants = () => {
+      const state = channel.presenceState<{ userName: string; joinedAt: string }>();
+      const participants: CallParticipant[] = Object.entries(state).map(([sid, presences]) => {
+        const p = presences[0];
+        return {
+          session_id: sid,
+          user_name: p?.userName ?? '?',
+          joined_at: p?.joinedAt ?? new Date().toISOString(),
+          last_seen: new Date().toISOString(),
+        };
+      });
+      // joined_at 昇順にソート
+      participants.sort((a, b) => a.joined_at.localeCompare(b.joined_at));
+      setCallParticipants(participants);
+
+      // 自分以外のセッションとの Peer 接続を確立
+      const mySessionId = callSessionIdRef.current;
+      if (!mySessionId) return;
+      const activeRemoteSessionIds = new Set(participants.map((p) => p.session_id).filter((s) => s !== mySessionId));
+
+      // 離脱したピアを閉じる
+      Object.keys(peersRef.current).forEach((sid) => {
+        if (!activeRemoteSessionIds.has(sid)) closePeer(sid);
+      });
+
+      // 新規ピアへオファー
+      activeRemoteSessionIds.forEach((remoteSessionId) => {
+        ensurePeer(remoteSessionId);
+        void makeOfferIfNeeded(remoteSessionId);
+      });
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, syncParticipants)
+      .on('broadcast', { event: 'signal' }, ({ payload: p }) => {
+        if (!p) return;
+        const sig = p as {
+          fromSessionId: string;
+          toSessionId: string;
+          signalType: 'offer' | 'answer' | 'ice';
+          payload: unknown;
+        };
+        // 自分宛て or broadcast のみ処理
+        if (sig.toSessionId && sig.toSessionId !== callSessionIdRef.current) return;
+        void applySignal({
+          id: 0,
+          from_session_id: sig.fromSessionId,
+          to_session_id: sig.toSessionId ?? null,
+          signal_type: sig.signalType,
+          payload: sig.payload,
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ userName, joinedAt: new Date().toISOString() });
+        }
+      });
+
+    callChannelRef.current = channel;
   };
 
   const ensurePeer = (remoteSessionId: string) => {
@@ -798,6 +877,15 @@ export default function ChatPage() {
     stopCallLoops();
     inCallRef.current = false;
 
+    // Supabase Realtime チャンネルを切断
+    if (callChannelRef.current) {
+      try {
+        await callChannelRef.current.untrack();
+      } catch {}
+      await supabaseCall.removeChannel(callChannelRef.current).catch(() => {});
+      callChannelRef.current = null;
+    }
+
     if (notifyServer && callSessionIdRef.current) {
       try {
         await fetch('/api/call', {
@@ -836,12 +924,8 @@ export default function ChatPage() {
   const startCallLoops = () => {
     stopCallLoops();
 
-    void syncCallState();
-
-    callPollTimerRef.current = window.setInterval(() => {
-      void syncCallState();
-    }, 1200);
-
+    // シグナリングは Supabase Realtime で行うため、ポーリングは不要
+    // ハートビートのみ DB 記録保持のために維持（非参加者の参加者一覧表示用）
     heartbeatTimerRef.current = window.setInterval(() => {
       if (!callSessionIdRef.current) return;
       fetch('/api/call', {
@@ -912,9 +996,12 @@ export default function ChatPage() {
       setInCall(true);
       setCallMenuOpen(true);
 
+      // Supabase Realtime チャンネルをセットアップ
+      setupCallChannel(sessionId, currentUser);
+
       // 通話参加通知：入室時の参加者一覧を取得してからPush送信
       try {
-        const stateRes = await fetch(`/api/call?roomId=${CALL_ROOM_ID}&sessionId=${sessionId}&lastSignalId=0`, { cache: 'no-store' });
+        const stateRes = await fetch(`/api/call?roomId=${CALL_ROOM_ID}`, { cache: 'no-store' });
         if (stateRes.ok) {
           const stateData = (await stateRes.json()) as { participants: { user_name: string }[] };
           const names = (stateData.participants ?? []).map((p) => p.user_name);
