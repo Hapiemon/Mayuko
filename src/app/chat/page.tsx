@@ -566,7 +566,6 @@ export default function ChatPage() {
             className={`flex items-center gap-1.5 text-sm text-white ${userTheme.buttonBg} ${userTheme.buttonHover} px-4 py-2 rounded-full`}
           >
             <span className="text-base">🎮</span>
-            ゲーム
           </button>
           {pushPermission === 'denied' && (
             <span className="text-xs text-violet-300">通知ブロック中</span>
