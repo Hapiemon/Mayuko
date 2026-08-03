@@ -39,6 +39,9 @@ export default function ChatPage() {
   const highlightTimerRef = useRef<number | null>(null);
   const [cannedOpen, setCannedOpen] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [showLoadOlderBtn, setShowLoadOlderBtn] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [messageFontSize, setMessageFontSize] = useState<MessageFontSize>('medium');
   const [activeCannedTab, setActiveCannedTab] = useState<'greeting'|'state'|'emotion'|'people'|'thing'|'syntax'|'entertainment'|'date'|'place'|'body'>('greeting');
@@ -255,9 +258,62 @@ export default function ChatPage() {
       const res = await fetch('/api/messages', { cache: 'no-store' });
       if (!res.ok) return;
       const data = (await res.json()) as Message[];
-      setMessages(data);
+      setMessages((prev) => {
+        if (prev.length === 0) {
+          return data;
+        }
+        const oldestFromLatest = data[0]?.id;
+        if (!oldestFromLatest) {
+          return prev;
+        }
+        const olderPart = prev.filter((m) => m.id < oldestFromLatest);
+        return [...olderPart, ...data];
+      });
+      setHasMoreOlder((prev) => prev || data.length === 200);
     } catch (e) {
       // ignore
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (loadingOlder || !hasMoreOlder || messages.length === 0) return;
+    const oldestId = messages[0]?.id;
+    if (!oldestId) return;
+
+    const el = messagesRef.current;
+    const prevScrollHeight = el?.scrollHeight ?? 0;
+    const prevScrollTop = el?.scrollTop ?? 0;
+
+    setLoadingOlder(true);
+    try {
+      const res = await fetch(`/api/messages?beforeId=${oldestId}`, { cache: 'no-store' });
+      if (!res.ok) return;
+
+      const older = (await res.json()) as Message[];
+      if (older.length === 0) {
+        setHasMoreOlder(false);
+        return;
+      }
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const uniqueOlder = older.filter((m) => !existingIds.has(m.id));
+        return [...uniqueOlder, ...prev];
+      });
+
+      if (older.length < 200) {
+        setHasMoreOlder(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingOlder(false);
+      window.requestAnimationFrame(() => {
+        const target = messagesRef.current;
+        if (!target) return;
+        const nextScrollHeight = target.scrollHeight;
+        target.scrollTop = nextScrollHeight - prevScrollHeight + prevScrollTop;
+      });
     }
   };
 
@@ -408,8 +464,10 @@ export default function ChatPage() {
     const el = messagesRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isAtTop = el.scrollTop <= 24;
     wasAtBottomRef.current = distFromBottom <= 60;
     setShowScrollBtn(distFromBottom > 60);
+    setShowLoadOlderBtn(isAtTop && hasMoreOlder && !loadingOlder);
   };
 
   useEffect(() => {
@@ -418,7 +476,12 @@ export default function ChatPage() {
     el.addEventListener('scroll', checkScrollBottom, { passive: true });
     return () => el.removeEventListener('scroll', checkScrollBottom);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser, hasMoreOlder, loadingOlder]);
+
+  useEffect(() => {
+    checkScrollBottom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMoreOlder, loadingOlder]);
 
   // メッセージ更新時にも位置チェック＆最下部なら自動スクロール
   useEffect(() => {
@@ -581,6 +644,17 @@ export default function ChatPage() {
       </header>
 
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+        {showLoadOlderBtn && (
+          <div className="sticky top-0 z-20 flex justify-center pb-2">
+            <button
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow ${userTheme.buttonBg} ${userTheme.buttonHover} disabled:opacity-60`}
+            >
+              {loadingOlder ? '読み込み中...' : '次の200件を読み込む'}
+            </button>
+          </div>
+        )}
         {messages.map((m) => (
           <div
             key={m.id}

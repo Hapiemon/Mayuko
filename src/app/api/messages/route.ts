@@ -23,27 +23,49 @@ async function ensureSchema() {
   `;
 }
 
-// GET /api/messages — 全メッセージ取得
-export async function GET() {
+// GET /api/messages — メッセージ取得（通常: 最新200件 / beforeId指定: そのIDより古い200件）
+export async function GET(req: NextRequest) {
   try {
     await ensureSchema();
     const sql = getSql();
-    const rows = await sql`
-      SELECT *
-      FROM (
-        SELECT id, sender, content, media_url, media_type, created_at,
-          reply_to_id, reply_to_sender, reply_to_content,
-          CASE
-            WHEN sender = 'まゆこ' THEN 'まゆこ既読'
-            WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
-            ELSE 'まゆこ既読'
-          END AS mayuko_read_status
-        FROM messages
-        ORDER BY created_at DESC, id DESC
-        LIMIT 200
-      ) AS latest
-      ORDER BY created_at ASC, id ASC
-    `;
+    const beforeIdRaw = req.nextUrl.searchParams.get('beforeId');
+    const beforeId = beforeIdRaw ? Number(beforeIdRaw) : null;
+    const hasValidBeforeId = Number.isInteger(beforeId) && (beforeId as number) > 0;
+
+    const rows = hasValidBeforeId
+      ? await sql`
+          SELECT *
+          FROM (
+            SELECT id, sender, content, media_url, media_type, created_at,
+              reply_to_id, reply_to_sender, reply_to_content,
+              CASE
+                WHEN sender = 'まゆこ' THEN 'まゆこ既読'
+                WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
+                ELSE 'まゆこ既読'
+              END AS mayuko_read_status
+            FROM messages
+            WHERE id < ${beforeId as number}
+            ORDER BY created_at DESC, id DESC
+            LIMIT 200
+          ) AS older
+          ORDER BY created_at ASC, id ASC
+        `
+      : await sql`
+          SELECT *
+          FROM (
+            SELECT id, sender, content, media_url, media_type, created_at,
+              reply_to_id, reply_to_sender, reply_to_content,
+              CASE
+                WHEN sender = 'まゆこ' THEN 'まゆこ既読'
+                WHEN mayuko_read_at IS NULL THEN 'まゆこ未読'
+                ELSE 'まゆこ既読'
+              END AS mayuko_read_status
+            FROM messages
+            ORDER BY created_at DESC, id DESC
+            LIMIT 200
+          ) AS latest
+          ORDER BY created_at ASC, id ASC
+        `;
     return NextResponse.json(rows, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
