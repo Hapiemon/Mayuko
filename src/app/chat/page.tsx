@@ -737,7 +737,7 @@ export default function ChatPage() {
               )}
             </div>
             <div className="mt-1 flex items-center gap-2 text-gray-400">
-              <span className="text-xs">{new Date(m.created_at).toLocaleString('ja-JP')}</span>
+              <span className="text-xs">{new Date(m.created_at).toLocaleString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
               <span className="text-[11px]">{m.mayuko_read_status ?? 'まゆこ未読'}</span>
             </div>
           </div>
